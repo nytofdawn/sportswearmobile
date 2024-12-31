@@ -1,13 +1,20 @@
-import React, { useState, useRef } from 'react';
-import { View, StyleSheet, PanResponder, Text, TextInput, TouchableOpacity, Dimensions,} from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, PanResponder, Text, TextInput, TouchableOpacity, Dimensions, Alert, ImageBackground } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const BlankCanvas = ({navigation}) => {
+import background from '../images/backgroundall.png';
+
+const BlankCanvas = ({ navigation }) => {
   const [shapes, setShapes] = useState([]);
   const shapeContainerRef = useRef(); // Create a reference to the shape container
 
   const containerWidth = Dimensions.get('window').width - 40;
   const containerHeight = Dimensions.get('window').height - 40;
+
+  useEffect(() => {
+    // Show an alert when entering the BlankCanvas
+    Alert.alert("Notice", "Please screenshot your logo after creation.");
+  }, []);
 
   const addShape = (type) => {
     const newShape = {
@@ -17,7 +24,7 @@ const BlankCanvas = ({navigation}) => {
       type,
       text: type === 'text' ? 'Editable Text' : '',
     };
-    setShapes([...shapes, newShape]);
+    setShapes((prevShapes) => [...prevShapes, newShape]);
   };
 
   const clearAllShapes = () => {
@@ -28,16 +35,13 @@ const BlankCanvas = ({navigation}) => {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderMove: (event, gestureState) => {
-        const newX = Math.max(0, Math.min(containerWidth - 120, shapes.find(shape => shape.id === id).x + gestureState.dx));
-        const newY = Math.max(0, Math.min(containerHeight - 80, shapes.find(shape => shape.id === id).y + gestureState.dy));
+        const shape = shapes.find((shape) => shape.id === id);
+        const newX = Math.max(0, Math.min(containerWidth - 120, shape.x + gestureState.dx));
+        const newY = Math.max(0, Math.min(containerHeight - 80, shape.y + gestureState.dy));
         setShapes((currentShapes) =>
           currentShapes.map((shape) =>
             shape.id === id
-              ? {
-                  ...shape,
-                  x: newX,
-                  y: newY,
-                }
+              ? { ...shape, x: newX, y: newY }
               : shape
           )
         );
@@ -96,19 +100,34 @@ const BlankCanvas = ({navigation}) => {
   };
 
   const handleNext = () => {
-    navigation.navigate('Upload')
-    console.log('Next button pressed');
+    Alert.alert(
+      'Confirm Screenshot',
+      'Please make sure you have taken a screenshot of your work. Do you want to proceed?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel', // The action when the user chooses to cancel
+        },
+        {
+          text: 'Confirm',
+          onPress: () => {
+            navigation.navigate('Upload');
+            console.log('Next button pressed');
+          },
+        },
+      ],
+      { cancelable: false } // Prevents dismissing the alert by tapping outside
+    );
   };
+  
 
   return (
-    <View style={styles.canvas}>
-      {/* Header */}
+    <ImageBackground source={background} style={styles.canvas} resizeMode="cover">
       <View style={styles.header}>
         <Text style={styles.headerText}>Screenshot your design before NEXT</Text>
       </View>
 
-      <TouchableOpacity style={styles.backButton}
-      onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={30} color="black" />
       </TouchableOpacity>
 
@@ -142,7 +161,7 @@ const BlankCanvas = ({navigation}) => {
       <TouchableOpacity onPress={clearAllShapes} style={styles.clearButton}>
         <Text style={styles.clearButtonText}>Clear All</Text>
       </TouchableOpacity>
-    </View>
+    </ImageBackground>
   );
 };
 
@@ -152,7 +171,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#ff8c00', // Header background color
+    backgroundColor: '#ff8c00',
     paddingVertical: 15,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -166,14 +185,14 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    top: 20, // Ensures alignment with the header
-    right: 20, // Moves it to the upper-right corner
-    zIndex: 3, // Higher than other elements like the header
-    backgroundColor: '#fff', // Optional: Background for visibility
-    borderRadius: 50, // Optional: Rounded appearance
-    padding: 5, // Optional: Padding for better touch target
-    elevation: 5, // Optional: Shadow for better visibility on Android
-    shadowColor: '#000', // Optional: Shadow for iOS
+    top: 20,
+    right: 20,
+    zIndex: 3,
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    padding: 5,
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -244,18 +263,18 @@ const styles = StyleSheet.create({
   },
   nextButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
   },
   clearButton: {
-    backgroundColor: '#f00',
+    backgroundColor: 'red',
     padding: 10,
-    marginTop: 20,
+    margin: 10,
     borderRadius: 5,
+    alignItems: 'center',
   },
   clearButtonText: {
     color: '#fff',
-    textAlign: 'center',
-    fontSize: 18,
+    fontSize: 16,
   },
 });
 

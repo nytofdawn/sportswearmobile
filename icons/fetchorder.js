@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ImageBackground } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // For accessing user's email from AsyncStorage
+
+import background from '../images/backgroundall.png';
 
 const FetchOrderScreen = () => {
   const [orders, setOrders] = useState([]);
@@ -34,10 +36,10 @@ const FetchOrderScreen = () => {
         const response = await axios.get('http://jerseyshop.iceiy.com/yung_order.php', {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=825aa7e027e495727ec5d3e75428b531',
+            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
             'Host': 'jerseyshop.iceiy.com',
             'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
           params: {
             email: userEmail, // Pass user's email as a query parameter
@@ -62,7 +64,7 @@ const FetchOrderScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={background} style={styles.container} resizeMode="cover">
       <Text style={styles.title}>My Orders</Text>
       {orders.length === 0 ? (
         <Text style={styles.noOrdersText}>No orders found.</Text>
@@ -73,7 +75,7 @@ const FetchOrderScreen = () => {
           renderItem={renderOrderItem}
         />
       )}
-    </View>
+    </ImageBackground>
   );
 };
 

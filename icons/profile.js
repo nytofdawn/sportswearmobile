@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Button, Alert, Image, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons'; // Import the icon library
 
 const ProfileScreen = ({ navigation }) => {
   const [userEmail, setUserEmail] = useState('');
@@ -25,7 +26,6 @@ const ProfileScreen = ({ navigation }) => {
     getUserData();
   }, []);
 
-  // Handle log out by removing user data from AsyncStorage
   const handleLogout = async () => {
     Alert.alert(
       "Confirm Logout",
@@ -60,6 +60,14 @@ const ProfileScreen = ({ navigation }) => {
       style={styles.background}
     >
       <View style={styles.container}>
+        {/* Back Icon */}
+        <TouchableOpacity
+          style={styles.backIcon}
+          onPress={() => navigation.navigate('Dashboard')} // Navigate to Dashboard
+        >
+          <Icon name="chevron-back" size={30} color="#fff" />
+        </TouchableOpacity>
+
         <View style={styles.card}>
           <Text style={styles.title}>Profile Information</Text>
           <Image
@@ -94,6 +102,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
+  backIcon: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 10,
+  },
   card: {
     backgroundColor: '#fff', // White background for the card
     borderRadius: 16,
@@ -126,7 +140,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: '100%',
     borderRadius: 8,
-    overflow: 'hidden', 
+    overflow: 'hidden',
   },
 });
 

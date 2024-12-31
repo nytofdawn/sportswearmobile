@@ -33,10 +33,10 @@ const NotificationScreen = ({ navigation }) => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=825aa7e027e495727ec5d3e75428b531',
+            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
             'Host': 'jerseyshop.iceiy.com',
             'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
         });
 

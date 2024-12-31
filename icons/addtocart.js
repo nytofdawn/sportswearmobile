@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, Alert, TouchableOpacity, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+
+import background from '../images/backgroundall.png';
 
 const CartScreen = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -11,20 +13,35 @@ const CartScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchCart = async () => {
       try {
+        setLoading(true);
+  
+        // Get userId from AsyncStorage
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (!storedUserId) {
+          Alert.alert('Error', 'User not logged in.');
+          setLoading(false);
+          return;
+        }
+  
+        // Fetch cart data from the API
         const response = await fetch('http://jerseyshop.iceiy.com/karton.php', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=825aa7e027e495727ec5d3e75428b531',
+            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
             'Host': 'jerseyshop.iceiy.com',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
         });
         const responseData = await response.json();
-        console.log('data:',responseData);
-
+        console.log('Fetched data:', responseData);
+  
         if (responseData.status === 'success') {
-          setCartItems(responseData.data);
+          const filteredCart = responseData.data.filter(
+            (item) => item.user_id === storedUserId
+          );
+  
+          setCartItems(filteredCart);
         } else {
           Alert.alert('Error', responseData.message);
         }
@@ -35,9 +52,10 @@ const CartScreen = ({ navigation }) => {
         setLoading(false);
       }
     };
-
+  
     fetchCart();
   }, []);
+  
 
   const handleBuyNow = async (item, selectedColor) => {
     console.log('Buy Now clicked for item:', item, 'Selected Color:', selectedColor);
@@ -64,9 +82,9 @@ const CartScreen = ({ navigation }) => {
       }, {
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': '__test=825aa7e027e495727ec5d3e75428b531',
+          'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
           'Host': 'jerseyshop.iceiy.com',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
         }
       });
 
@@ -89,44 +107,61 @@ const CartScreen = ({ navigation }) => {
   };
 
   const handleDelete = async (productId) => {
-    try {
-      console.log('Product ID', productId);
-  
-      // Send the 'id' in the request body, not 'product_id'
-      const response = await axios.post(
-        'http://jerseyshop.iceiy.com/tanggal_baga.php',
-        { id: productId }, // Send 'id' instead of 'product_id'
+    Alert.alert(
+      'Confirm Deletion', // Title of the alert
+      'Are you sure you want to delete this item?', // Message
+      [
         {
-          headers: {
-            'Content-Type': 'application/json', // Ensure it's JSON
-            'Cookie': '__test=825aa7e027e495727ec5d3e75428b531',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          text: 'Cancel',
+          style: 'cancel', // This styles the button as a "Cancel" action
+        },
+        {
+          text: 'Delete',
+          style: 'destructive', // This styles the button to indicate a destructive action
+          onPress: async () => {
+            try {
+              console.log('Product ID', productId);
+  
+              // Send the 'id' in the request body
+              const response = await axios.post(
+                'http://jerseyshop.iceiy.com/tanggal_baga.php',
+                { id: productId }, // Send 'id' instead of 'product_id'
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
+                    'Host': 'jerseyshop.iceiy.com',
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+                  },
+                }
+              );
+  
+              console.log('Delete response:', response.data);
+  
+              // Check if the item was deleted successfully
+              if (response.data.status === 'success') {
+                Alert.alert('Success', response.data.message);
+                // Remove the deleted item from the local cart list
+                const updatedCart = cartItems.filter(cartItem => cartItem.id !== productId);
+                setCartItems(updatedCart);
+              } else {
+                Alert.alert('Error', response.data.message);
+              }
+            } catch (error) {
+              console.error('Error deleting item:', error);
+              Alert.alert('Error', 'An error occurred while deleting the item.');
+            }
           },
-        }
-      );
-  
-      console.log('Delete response:', response.data);
-  
-      // Check if the item was deleted successfully
-      if (response.data.status === 'success') {
-        Alert.alert('Success', response.data.message);
-        // Remove the deleted item from the local cart list
-        const updatedCart = cartItems.filter(cartItem => cartItem.id !== productId);
-        setCartItems(updatedCart);
-      } else {
-        Alert.alert('Error', response.data.message);
-      }
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      Alert.alert('Error', 'An error occurred while deleting the item.');
-    }
+        },
+      ]
+    );
   };
+  
   
   
 
   return (
-    <View style={styles.container}>
+    <ImageBackground source={background} style={styles.container} resizeMode="cover">
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
         <Icon name="chevron-back" size={30} color="#000" />
       </TouchableOpacity>
@@ -140,7 +175,7 @@ const CartScreen = ({ navigation }) => {
           renderItem={({ item }) => (
             <View style={styles.itemContainer}>
               <Text style={styles.itemText}>Product: {item.product_name}</Text>
-              <Text style={styles.itemText}>Price: ${parseFloat(item.price).toFixed(2)}</Text>
+              <Text style={styles.itemText}>Price: PHP{parseFloat(item.price).toFixed(2)}</Text>
               
               <TouchableOpacity 
                 style={styles.cancelButton} 
@@ -159,7 +194,7 @@ const CartScreen = ({ navigation }) => {
           )}
         />
       )}
-    </View>
+    </ImageBackground>
   );
 };
 

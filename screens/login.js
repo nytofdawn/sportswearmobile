@@ -34,12 +34,12 @@ export default function LoginScreen({ navigation }) {
         {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=825aa7e027e495727ec5d3e75428b531', // Keep the cookie in the header
+            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
             'Host': 'jerseyshop.iceiy.com',
             'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
-          withCredentials: true,  // Ensure cookies are included in requests
+          withCredentials: true, // Ensure cookies are included in requests
         }
       );
   
@@ -51,17 +51,13 @@ export default function LoginScreen({ navigation }) {
         const cookie = response.headers['cookie']; // Extract the cookie from response headers
   
         if (cookie) {
-          // Save the cookie to AsyncStorage
           await AsyncStorage.setItem('userCookie', JSON.stringify(cookie));
           console.log('User Cookie saved:', JSON.stringify(cookie)); // Log the saved cookie
         }
   
-        // Save user data in AsyncStorage
         await AsyncStorage.setItem('userEmail', userEmail);
         await AsyncStorage.setItem('userId', userId.toString());
         
-        console.log('User Email saved:', userEmail); // Log the saved user email
-        console.log('User ID saved:', userId); // Log the saved user ID
   
         Alert.alert('Login Successful', 'Welcome back!', [
           {
@@ -70,7 +66,11 @@ export default function LoginScreen({ navigation }) {
           },
         ]);
       } else {
-        Alert.alert('Login Failed', response.data.message || 'Invalid credentials');
+        // Show alert for incorrect credentials
+        Alert.alert(
+          'Login Failed',
+          response.data.message || 'Incorrect email or password. Please try again.'
+        );
       }
     } catch (error) {
       console.error('Error:', error);
