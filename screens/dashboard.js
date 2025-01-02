@@ -17,7 +17,7 @@ const DashboardScreen = () => {
         const response = await axios.get('http://jerseyshop.iceiy.com/fetch_products.php', {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
+            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
             'Host': 'jerseyshop.iceiy.com',
             'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },

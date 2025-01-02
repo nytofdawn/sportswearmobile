@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // For accessing user's email from AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 import background from '../images/backgroundall.png';
 
-const FetchOrderScreen = () => {
+const FetchOrderScreen = ({ navigation }) => { // Added navigation prop here
   const [orders, setOrders] = useState([]);
   const [userEmail, setUserEmail] = useState(''); // Store the current user's email
 
@@ -36,7 +37,7 @@ const FetchOrderScreen = () => {
         const response = await axios.get('http://jerseyshop.iceiy.com/yung_order.php', {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=32d51a1104d21b918c67f65f310e0c61',
+            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
             'Host': 'jerseyshop.iceiy.com',
             'User-Agent':
               'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
@@ -66,6 +67,12 @@ const FetchOrderScreen = () => {
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
       <Text style={styles.title}>My Orders</Text>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()} // Navigate back
+      >
+        <Icon name="chevron-back-outline" size={30} color="#000" />
+      </TouchableOpacity>
       {orders.length === 0 ? (
         <Text style={styles.noOrdersText}>No orders found.</Text>
       ) : (
@@ -82,7 +89,7 @@ const FetchOrderScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: 35,
     backgroundColor: '#fff',
   },
   title: {
@@ -98,6 +105,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
+  
   productName: {
     fontSize: 16,
     fontWeight: 'bold',
