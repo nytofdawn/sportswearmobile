@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
+import axios from 'axios';
+const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
 const BlankCanvas = () => {
   const navigation = useNavigation();
@@ -110,6 +112,33 @@ const BlankCanvas = () => {
     }
   };
 
+  const createPaymentLink = async () => {
+    try {
+      const res = await axios.post('https://api.paymongo.com/v1/links', {
+        data: {
+          attributes: {
+            amount: 10000,
+            description: 'Thank you for trusting Primo\'s Sportswear',
+          }
+        }
+      }, {
+        headers: {
+          Authorization: `Basic ${btoa(paymongoAPIKey + ':')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      // console.log(res.data);
+      const paymentInfos = {
+        paymentLinkID: res.data.data.id,
+        paymentLinkUrl: res.data.data.attributes.checkout_url
+      }
+      // console.log(paymentInfos);
+      return paymentInfos;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const handleSubmit = async () => {
     // Ensure required fields are filled in
     if (!productDetails.email || !productDetails.size || !productDetails.description || !productDetails.color || !productDetails.name || !productDetails.price) {
@@ -136,28 +165,33 @@ const BlankCanvas = () => {
       price: productDetails.price,
     };
 
-    try {
-      const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productDataToSubmit),
-      });
+    // console.log(productDataToSubmit);
+    createPaymentLink().then(res=>{
+      navigation.navigate("BCPayment", {paymentInfo: res, productData: productDataToSubmit, productDetails:productDetails});
+    })
 
-      const createData = await createResponse.json();
-      if (createResponse.ok) {
-        Alert.alert('Success', 'Product details submitted successfully!');
-        console.log('Product details:', createData);
-        navigation.goBack();
-      } else {
-        Alert.alert('Error', `Failed to submit product details: ${createData.message}`);
-        console.log('Failed to submit product details:', createData);
-      }
-    } catch (error) {
-      console.error('Error submitting product details:', error);
-      Alert.alert('Error', 'An error occurred while submitting the product details.');
-    }
+    // try {
+    //   const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(productDataToSubmit),
+    //   });
+
+    //   const createData = await createResponse.json();
+    //   if (createResponse.ok) {
+    //     Alert.alert('Success', 'Product details submitted successfully!');
+    //     console.log('Product details:', createData);
+    //     navigation.goBack();
+    //   } else {
+    //     Alert.alert('Error', `Failed to submit product details: ${createData.message}`);
+    //     console.log('Failed to submit product details:', createData);
+    //   }
+    // } catch (error) {
+    //   console.error('Error submitting product details:', error);
+    //   Alert.alert('Error', 'An error occurred while submitting the product details.');
+    // }
   };
 
   return (

@@ -10,19 +10,52 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
+const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
 const { width } = Dimensions.get('window');
 
 const ProductViewScreen = ({ route, navigation }) => {
   const { product } = route.params;
+  const nav = useNavigation();
+
+  const createPaymentLink = async () => {
+    try {
+      const res = await axios.post('https://api.paymongo.com/v1/links', {
+        data: {
+          attributes: {
+            amount: 10000,
+            description: 'Thank you for trusting Primo\'s Sportswear',
+          }
+        }
+      }, {
+        headers: {
+          Authorization: `Basic ${btoa(paymongoAPIKey + ':')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      // console.log(res.data);
+      const paymentInfos = {
+        paymentLinkID: res.data.data.id,
+        paymentLinkUrl: res.data.data.attributes.checkout_url
+      }
+      // console.log(paymentInfos);
+      return paymentInfos;
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   const handleCreateOrder = async () => {
     try {
+
       const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
         alert('Please log in to create an order.');
         return;
       }
+
 
       const { name, price, _id, description, image, size = 'M', category = 'General' } = product;
       const data = {
@@ -36,27 +69,12 @@ const ProductViewScreen = ({ route, navigation }) => {
         status: 'pending',
       };
 
-      console.log('Order payload:', data);
+      // console.log('Order payload:', data);
+      createPaymentLink().then(res=>{
+        nav.navigate('Payment', {paymentInfo: res, orderData: data});
+      })
+      
 
-      const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const responseData = await response.json();
-
-      console.log('Response status:', response.status); // Log HTTP status
-      console.log('Response data:', responseData); // Log the entire response
-
-      if (response.ok && responseData._id) {
-        alert('Order successfully created!');
-      } else {
-        const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
-        alert('Failed to create order: ' + errorMessage);
-      }
     } catch (error) {
       console.error('Error creating order:', error);
       alert('An error occurred while creating the order.');
@@ -65,7 +83,7 @@ const ProductViewScreen = ({ route, navigation }) => {
 
   const handleCustomizePress = () => {
     navigation.navigate('Blank', { product });
-    console.log('PRo',product);
+    console.log('PRo', product);
   };
 
   const handleAddToCart = async () => {
@@ -75,16 +93,16 @@ const ProductViewScreen = ({ route, navigation }) => {
         alert('Please log in to add to the cart.');
         return;
       }
-  
+
       const { _id, name, price, description, image, size = 'M', category = 'General' } = product;
-  
+
       const data = {
         userID: userId, // Update to userID
         productID: _id, // Update to productID
       };
-  
+
       console.log('Sending data to AddToCart API:', data);
-  
+
       const response = await fetch('https://jerseystore-server.onrender.com/web/AddToCart', {
         method: 'POST',
         headers: {
@@ -92,10 +110,10 @@ const ProductViewScreen = ({ route, navigation }) => {
         },
         body: JSON.stringify(data),
       });
-  
+
       const responseData = await response.json();
       console.log('Response:', responseData);
-  
+
       if (response.ok) {
         alert('Product added to cart!');
       } else {
@@ -106,8 +124,8 @@ const ProductViewScreen = ({ route, navigation }) => {
       alert('An error occurred while adding the product to the cart.');
     }
   };
-  
-  
+
+
 
   return (
     <ImageBackground source={require('../images/backgroundall.png')} style={styles.container} resizeMode="cover">

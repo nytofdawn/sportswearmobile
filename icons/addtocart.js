@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity, ImageBackgro
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
 import background from '../images/backgroundall.png';
 
@@ -41,6 +42,33 @@ const CartScreen = ({ navigation }) => {
     return () => clearInterval(intervalId);
   }, []);
 
+  const createPaymentLink = async () => {
+    try {
+      const res = await axios.post('https://api.paymongo.com/v1/links', {
+        data: {
+          attributes: {
+            amount: 10000,
+            description: 'Thank you for trusting Primo\'s Sportswear',
+          }
+        }
+      }, {
+        headers: {
+          Authorization: `Basic ${btoa(paymongoAPIKey + ':')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      // console.log(res.data);
+      const paymentInfos = {
+        paymentLinkID: res.data.data.id,
+        paymentLinkUrl: res.data.data.attributes.checkout_url
+      }
+      // console.log(paymentInfos);
+      return paymentInfos;
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   const handleCreateOrder = async (product) => {
     try {
       const userId = await AsyncStorage.getItem('userId');
@@ -68,28 +96,33 @@ const CartScreen = ({ navigation }) => {
         status: 'pending',
       };
 
+      // console.log(data);
+      createPaymentLink().then(res=>{
+        navigation.navigate("CartPay", {paymentInfo: res, data: data, product: product});
+      })
+  
 
-      const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      // const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify(data),
+      // });
 
-      const responseData = await response.json();
+      // const responseData = await response.json();
 
-      console.log('Response status:', response.status); // Log HTTP status
-      console.log('Response data:', responseData); // Log the entire response
+      // console.log('Response status:', response.status); // Log HTTP status
+      // console.log('Response data:', responseData); // Log the entire response
 
-      if (response.ok && responseData._id) {
-        alert('Order successfully created!');
-        // Remove the item from the cart after a successful purchase
-        handleDeleteItem(product._id || product.productID?._id);
-      } else {
-        const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
-        alert('Failed to create order: ' + errorMessage);
-      }
+      // if (response.ok && responseData._id) {
+      //   alert('Order successfully created!');
+      //   // Remove the item from the cart after a successful purchase
+      //   handleDeleteItem(product._id || product.productID?._id);
+      // } else {
+      //   const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
+      //   alert('Failed to create order: ' + errorMessage);
+      // }
     } catch (error) {
       console.error('Error creating order:', error);
       alert('An error occurred while creating the order.');

@@ -1,15 +1,14 @@
-import { View, Text, Alert, StyleSheet, TouchableOpacity, BackHandler } from 'react-native'
+import { View, Text, Alert, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import React, { useRef, useEffect } from 'react'
-import { useRoute } from '@react-navigation/native'
 import WebView from 'react-native-webview'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import axios from 'axios'
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
-const Payment = () => {
-    const nav = useNavigation()
+const BlankCustomPayment = () => {
+    const nav = useNavigation();
     const router = useRoute();
-    const { paymentInfo, orderData } = router.params;
+    const { paymentInfo, productData } = router.params;
     const webViewRef = useRef(null);
 
     const archivePMLink = async () => {
@@ -69,23 +68,19 @@ const Payment = () => {
 
     const insertOrder = async () => {
         try {
-            const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+            const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(orderData),
+                body: JSON.stringify(productData),
             });
 
-            const responseData = await response.json();
-
-            console.log('Response status:', response.status); // Log HTTP status
-            console.log('Response data:', responseData); // Log the entire response
-
-            if (response.ok && responseData._id) {
+            const createData = await createResponse.json();
+            if (createResponse.ok) {
                 Alert.alert(
-                    'Payment Successful',
-                    'Your payment was successful! and Order successfully created!',
+                    'Success',
+                    'Product details submitted successfully!',
                     [
                         {
                             text: 'OK',
@@ -96,15 +91,17 @@ const Payment = () => {
                         }
                     ]
                 );
+                console.log('Product details:', createData);
+                nav.goBack();
             } else {
-                const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
-                alert('Failed to create order: ' + errorMessage);
+                Alert.alert('Error', `Failed to submit product details: ${createData.message}`);
+                console.log('Failed to submit product details:', createData);
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error submitting product details:', error);
+            Alert.alert('Error', 'An error occurred while submitting the product details.');
         }
     }
-
     return (
         <View style={{ flex: 1 }}>
             <WebView
@@ -128,7 +125,7 @@ const Payment = () => {
     )
 }
 
-export default Payment
+export default BlankCustomPayment
 
 const styles = StyleSheet.create({
     cancelButton: {

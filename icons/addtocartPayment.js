@@ -1,15 +1,15 @@
-import { View, Text, Alert, StyleSheet, TouchableOpacity, BackHandler } from 'react-native'
+import { View, Text, Alert, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
 import React, { useRef, useEffect } from 'react'
-import { useRoute } from '@react-navigation/native'
 import WebView from 'react-native-webview'
-import { useNavigation } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation, useRoute } from '@react-navigation/native'
 import axios from 'axios'
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
-const Payment = () => {
-    const nav = useNavigation()
+const AddtocartPayment = () => {
+    const nav = useNavigation();
     const router = useRoute();
-    const { paymentInfo, orderData } = router.params;
+    const { paymentInfo, data, product } = router.params;
     const webViewRef = useRef(null);
 
     const archivePMLink = async () => {
@@ -66,6 +66,30 @@ const Payment = () => {
         );
     };
 
+    const handleDeleteItem = async (itemId) => {
+        try {
+          const storedUserId = await AsyncStorage.getItem('userId');
+          if (!storedUserId) {
+            Alert.alert('Error', 'User not logged in.');
+            return;
+          }
+    
+          const response = await axios.delete('https://jerseystore-server.onrender.com/web/deleteFromCart', {
+            data: { userID: storedUserId, productID: itemId },
+          });
+    
+          if (response.data.status === 'success') {
+            // Immediately update the cart items state to remove the deleted item
+            setCartItems(prevCartItems => prevCartItems.filter(item => item._id !== itemId));
+            Alert.alert('Success', 'Item successfully deleted.');
+          } else {
+            Alert.alert('Error', response.data.message || 'Failed to delete item.');
+          }
+        } catch (error) {
+          console.error('Error deleting item:', error);
+          Alert.alert('Error', 'An error occurred while deleting the item.');
+        }
+      };
 
     const insertOrder = async () => {
         try {
@@ -74,7 +98,7 @@ const Payment = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(orderData),
+                body: JSON.stringify(data),
             });
 
             const responseData = await response.json();
@@ -83,25 +107,16 @@ const Payment = () => {
             console.log('Response data:', responseData); // Log the entire response
 
             if (response.ok && responseData._id) {
-                Alert.alert(
-                    'Payment Successful',
-                    'Your payment was successful! and Order successfully created!',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => {
-                                nav.navigate("Dashboard");
-
-                            }
-                        }
-                    ]
-                );
+                alert('Order successfully created!');
+                // Remove the item from the cart after a successful purchase
+                handleDeleteItem(product._id || product.productID?._id);
             } else {
                 const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
                 alert('Failed to create order: ' + errorMessage);
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error creating order:', error);
+            alert('An error occurred while creating the order.');
         }
     }
 
@@ -128,7 +143,7 @@ const Payment = () => {
     )
 }
 
-export default Payment
+export default AddtocartPayment
 
 const styles = StyleSheet.create({
     cancelButton: {
