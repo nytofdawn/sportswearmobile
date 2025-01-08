@@ -1,280 +1,283 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, PanResponder, Text, TextInput, TouchableOpacity, Dimensions, Alert, ImageBackground } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 
-import background from '../images/backgroundall.png';
-
-const BlankCanvas = ({ navigation }) => {
-  const [shapes, setShapes] = useState([]);
-  const shapeContainerRef = useRef(); // Create a reference to the shape container
-
-  const containerWidth = Dimensions.get('window').width - 40;
-  const containerHeight = Dimensions.get('window').height - 40;
+const BlankCanvas = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const [productDetails, setProductDetails] = useState({
+    email: '',
+    imgUrl: '',
+    logoUrl: '',
+    size: '',
+    description: '',
+    notes: '',
+    color: '',
+    price: 0,
+  });
+  const [logoImage, setLogoImage] = useState(null);  // For logo image
 
   useEffect(() => {
-    // Show an alert when entering the BlankCanvas
-    Alert.alert("Notice", "Please screenshot your logo after creation.");
-  }, []);
-
-  const addShape = (type) => {
-    const newShape = {
-      id: shapes.length + 1,
-      x: 20,
-      y: 20,
-      type,
-      text: type === 'text' ? 'Editable Text' : '',
-    };
-    setShapes((prevShapes) => [...prevShapes, newShape]);
-  };
-
-  const clearAllShapes = () => {
-    setShapes([]);
-  };
-
-  const panResponder = (id) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (event, gestureState) => {
-        const shape = shapes.find((shape) => shape.id === id);
-        const newX = Math.max(0, Math.min(containerWidth - 120, shape.x + gestureState.dx));
-        const newY = Math.max(0, Math.min(containerHeight - 80, shape.y + gestureState.dy));
-        setShapes((currentShapes) =>
-          currentShapes.map((shape) =>
-            shape.id === id
-              ? { ...shape, x: newX, y: newY }
-              : shape
-          )
-        );
-      },
-    });
-
-  const renderShape = (shape) => {
-    switch (shape.type) {
-      case 'circle':
-        return (
-          <View
-            key={shape.id}
-            style={[styles.circle, { left: shape.x, top: shape.y }]}
-            {...panResponder(shape.id).panHandlers}
-          />
-        );
-      case 'rectangle':
-        return (
-          <View
-            key={shape.id}
-            style={[styles.rectangle, { left: shape.x, top: shape.y }]}
-            {...panResponder(shape.id).panHandlers}
-          />
-        );
-      case 'triangle':
-        return (
-          <View
-            key={shape.id}
-            style={[styles.triangle, { left: shape.x, top: shape.y }]}
-            {...panResponder(shape.id).panHandlers}
-          />
-        );
-      case 'text':
-        return (
-          <View
-            key={shape.id}
-            style={[styles.textShape, { left: shape.x, top: shape.y }]}
-            {...panResponder(shape.id).panHandlers}
-          >
-            <TextInput
-              style={styles.textInput}
-              value={shape.text}
-              onChangeText={(newText) =>
-                setShapes((currentShapes) =>
-                  currentShapes.map((item) =>
-                    item.id === shape.id ? { ...item, text: newText } : item
-                  )
-                )
-              }
-            />
-          </View>
-        );
-      default:
-        return null;
+    if (route.params?.product) {
+      const { product } = route.params;
+      setProductDetails({
+        name: product.name,
+        email: product.email,
+        imgUrl: product.image,
+        size: product.size,
+        description: product.description,
+        color: product.color,
+        price: product.price,
+        productID: product.productID,  // Added to ensure productID is included
+      });
     }
-  };
 
-  const handleNext = () => {
-    Alert.alert(
-      'Confirm Screenshot',
-      'Please make sure you have taken a screenshot of your work. Do you want to proceed?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel', // The action when the user chooses to cancel
-        },
-        {
-          text: 'Confirm',
-          onPress: () => {
-            navigation.navigate('Upload');
-            console.log('Next button pressed');
-          },
-        },
-      ],
-      { cancelable: false } // Prevents dismissing the alert by tapping outside
-    );
+    const getEmailFromAsyncStorage = async () => {
+      try {
+        const userEmail = await AsyncStorage.getItem('userEmail');
+        if (userEmail) {
+          setProductDetails((prevState) => ({
+            ...prevState,
+            email: userEmail,
+          }));
+        }
+      } catch (error) {
+        console.log('Error retrieving email from AsyncStorage: ', error);
+      }
+    };
+    getEmailFromAsyncStorage();
+  }, [route.params]);
+
+  const pickLogo = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission to access the camera roll is required!');
+      return;
+    }
+  
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+  
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      // Access the URI from the first item in the assets array
+      const imageUri = result.assets[0].uri;
+      setLogoImage(imageUri);  // Store the logo image URI
+      console.log('Logo URI:', imageUri);  // Log the URI to check
+    } else {
+      console.log('Image picker was cancelled or no assets found');
+    }
   };
   
 
-  return (
-    <ImageBackground source={background} style={styles.canvas} resizeMode="cover">
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Screenshot your design before NEXT</Text>
-      </View>
+  const uploadImage = async (imageUri) => {
+    const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/djfvjomng/image/upload"; // Cloudinary API URL
+    const CLOUDINARY_UPLOAD_PRESET = "jerseymob"; // Use the preset created in Cloudinary
+  
+    const formData = new FormData();
+    formData.append("file", {
+      uri: imageUri,
+      name: "image.jpg", // You can use dynamic naming if you need
+      type: "image/jpeg", // Ensure that the MIME type is correct
+    });
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET); // Add upload preset
+  
+    console.log("Uploading image:", imageUri); // Log the image URI before uploading
+  
+    try {
+      const response = await fetch(CLOUDINARY_URL, {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+      if (data?.secure_url) {
+        console.log("Image uploaded successfully!", data.secure_url); // Log the secure URL of the uploaded image
+        return data.secure_url; // Assuming the server responds with the secure image URL
+      } else {
+        console.error('Failed to upload image:', data.error || 'Unknown error');
+        return '';
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return '';
+    }
+  };
 
+  const handleSubmit = async () => {
+    // Ensure required fields are filled in
+    if (!productDetails.email || !productDetails.size || !productDetails.description || !productDetails.color || !productDetails.name || !productDetails.price) {
+      Alert.alert('Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    let logoUrl = productDetails.logoUrl || '';
+
+    // Upload logo image if selected
+    if (logoImage) {
+      logoUrl = await uploadImage(logoImage);
+    }
+
+    const productDataToSubmit = {
+      name: productDetails.name,
+      email: productDetails.email,
+      imgUrl: productDetails.imgUrl,  // Use the imgUrl from the product details (no need to upload again)
+      logoUrl: logoUrl,
+      size: productDetails.size,
+      description: productDetails.description,
+      notes: productDetails.notes,
+      color: productDetails.color,
+      price: productDetails.price,
+    };
+
+    try {
+      const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productDataToSubmit),
+      });
+
+      const createData = await createResponse.json();
+      if (createResponse.ok) {
+        Alert.alert('Success', 'Product details submitted successfully!');
+        console.log('Product details:', createData);
+        navigation.goBack();
+      } else {
+        Alert.alert('Error', `Failed to submit product details: ${createData.message}`);
+        console.log('Failed to submit product details:', createData);
+      }
+    } catch (error) {
+      console.error('Error submitting product details:', error);
+      Alert.alert('Error', 'An error occurred while submitting the product details.');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={30} color="black" />
       </TouchableOpacity>
 
-      {/* Shape container with ref for capturing */}
-      <View style={styles.shapeContainer} ref={shapeContainerRef}>
-        {shapes.map((shape) => renderShape(shape))}
-      </View>
+      <Text style={styles.headerText}>Customize Your Product</Text>
 
-      {/* Buttons to add shapes */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity onPress={() => addShape('circle')} style={styles.addButton}>
-          <Text>+ Add Cir</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => addShape('rectangle')} style={styles.addButton}>
-          <Text>+ Add Rec</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => addShape('triangle')} style={styles.addButton}>
-          <Text>+ Add Tri</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => addShape('text')} style={styles.addButton}>
-          <Text>+ Add Txt</Text>
-        </TouchableOpacity>
-      </View>
+      {productDetails.email ? (
+        <Text style={styles.emailText}>Email: {productDetails.email}</Text>
+      ) : (
+        <Text style={styles.emailText}>Loading email...</Text>
+      )}
 
-      {/* Next Button */}
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-        <Text style={styles.nextButtonText}>Next</Text>
+      {/* Display selected product image from product details */}
+      {productDetails.imgUrl ? (
+        <Image source={{ uri: productDetails.imgUrl }} style={styles.imagePreview} />
+      ) : (
+        <Text>No product image available</Text>
+      )}
+
+      {/* Display selected logo image preview */}
+      {logoImage ? (
+        <Image source={{ uri: logoImage }} style={styles.imagePreview} />
+      ) : (
+        <Text>No logo image selected</Text>
+      )}
+
+      <TouchableOpacity style={styles.imagePickerButton} onPress={pickLogo}>
+        <Text style={styles.buttonText}>Pick a Logo</Text>
       </TouchableOpacity>
 
-      {/* Clear all button */}
-      <TouchableOpacity onPress={clearAllShapes} style={styles.clearButton}>
-        <Text style={styles.clearButtonText}>Clear All</Text>
+      <Text style={styles.text}>Size: {productDetails.size}</Text>
+      <Text style={styles.text}>Price: ${productDetails.price}</Text>
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Enter description" 
+        value={productDetails.description} 
+        onChangeText={(text) => setProductDetails({ ...productDetails, description: text })}
+      />
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Enter notes" 
+        value={productDetails.notes} 
+        onChangeText={(text) => setProductDetails({ ...productDetails, notes: text })}
+      />
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Enter color" 
+        value={productDetails.color} 
+        onChangeText={(text) => setProductDetails({ ...productDetails, color: text })}
+      />
+
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Submit</Text>
       </TouchableOpacity>
-    </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  canvas: {
+  container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    backgroundColor: '#ff8c00',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  headerText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    backgroundColor: '#f8f8f8',
+    padding: 20,
   },
   backButton: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 3,
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    padding: 5,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    padding: 10,
   },
-  shapeContainer: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: '#000',
-    margin: 20,
-    borderRadius: 10,
-    backgroundColor: '#f9f9f9',
-    position: 'relative',
-  },
-  circle: {
-    position: 'absolute',
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'tomato',
-  },
-  rectangle: {
-    position: 'absolute',
-    width: 120,
-    height: 80,
-    backgroundColor: 'skyblue',
-  },
-  triangle: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    borderLeftWidth: 60,
-    borderRightWidth: 60,
-    borderBottomWidth: 100,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: 'green',
-  },
-  textShape: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-    padding: 5,
-  },
-  textInput: {
-    fontSize: 40,
-    color: 'black',
-    borderWidth: 1,
-    borderColor: '#ccc',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
   },
-  addButton: {
-    backgroundColor: '#ddd',
-    padding: 10,
-    margin: 5,
+  emailText: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  imagePreview: {
+    width: 150,  // Increased width for testing
+    height: 150, // Increased height for testing
+    marginVertical: 10,
+    borderRadius: 10, // Increased radius for clarity
+    backgroundColor: '#ddd', // Add background color for visibility
+  },
+  text: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  input: {
+    fontSize: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 8,
     borderRadius: 5,
   },
-  nextButton: {
-    backgroundColor: 'blue',
-    padding: 15,
-    margin: 10,
+  submitButton: {
+    backgroundColor: '#28a745',
+    padding: 10,
+    marginTop: 20,
     borderRadius: 5,
     alignItems: 'center',
   },
-  nextButtonText: {
+  buttonText: {
     color: '#fff',
     fontSize: 16,
   },
-  clearButton: {
-    backgroundColor: 'red',
+  imagePickerButton: {
+    backgroundColor: '#007bff',
     padding: 10,
-    margin: 10,
+    marginTop: 20,
     borderRadius: 5,
     alignItems: 'center',
-  },
-  clearButtonText: {
-    color: '#fff',
-    fontSize: 16,
   },
 });
 

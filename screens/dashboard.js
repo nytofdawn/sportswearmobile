@@ -14,12 +14,9 @@ const DashboardScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://jerseyshop.iceiy.com/fetch_products.php', {
+        const response = await axios.get('https://jerseystore-server.onrender.com/web/products', {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
         });
         setProducts(response.data.products);
@@ -27,9 +24,10 @@ const DashboardScreen = () => {
         console.error('Error fetching products:', error);
       }
     };
-
+  
     fetchProducts();
   }, []);
+  
 
   // Filter products based on the search query
   const filteredProducts = products.filter(product =>
@@ -41,14 +39,21 @@ const DashboardScreen = () => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.productContainer} onPress={() => navigation.navigate('ProductView', { product: item })}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.productImage}
-      />
-      <Text style={styles.productName}>{item.name}</Text>
-      <Text style={styles.productPrice}>Php: {item.price}</Text>
-    </TouchableOpacity>
+    <TouchableOpacity
+  style={styles.productContainer}
+  onPress={() => {
+    console.log('Navigating with product:', item); // Debug log
+    navigation.navigate('ProductView', { product: item });
+  }}
+>
+  <Image
+    source={{ uri: item.image }}
+    style={styles.productImage}
+  />
+  <Text style={styles.productName}>{item.name}</Text>
+  <Text style={styles.productPrice}>Php: {item.price}</Text>
+</TouchableOpacity>
+
   );
 
   return (
@@ -91,12 +96,13 @@ const DashboardScreen = () => {
         </View>
 
         <FlatList
-          data={filteredProducts}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          renderItem={renderItem}
-          contentContainerStyle={styles.productList}
-        />
+  data={filteredProducts}
+  keyExtractor={(item) => (item._id ? item._id.toString() : Math.random().toString())}
+  numColumns={2}
+  renderItem={renderItem}
+  contentContainerStyle={styles.productList}
+/>
+
       </View>
     </ImageBackground>
   );

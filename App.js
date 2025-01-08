@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { GestureHandlerRootView } from 'react-native-gesture-handler'; // Ensure GestureHandlerRootView is imported
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import BeginScreen from './screens/begin';
 import LoginScreen from './screens/login';
 import DashboardScreen from './screens/dashboard';

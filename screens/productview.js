@@ -11,69 +11,106 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import background from '../images/backgroundall.png';
-
 const { width } = Dimensions.get('window');
 
 const ProductViewScreen = ({ route, navigation }) => {
   const { product } = route.params;
 
-  const handleBuyNow = () => {
-    navigation.navigate('Buy', { product });
+  const handleCreateOrder = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        alert('Please log in to create an order.');
+        return;
+      }
+
+      const { name, price, _id, description, image, size = 'M', category = 'General' } = product;
+      const data = {
+        userId,
+        name,
+        size,
+        category,
+        price,
+        quantity: 1,
+        totalAmount: price,
+        status: 'pending',
+      };
+
+      console.log('Order payload:', data);
+
+      const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+
+      console.log('Response status:', response.status); // Log HTTP status
+      console.log('Response data:', responseData); // Log the entire response
+
+      if (response.ok && responseData._id) {
+        alert('Order successfully created!');
+      } else {
+        const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
+        alert('Failed to create order: ' + errorMessage);
+      }
+    } catch (error) {
+      console.error('Error creating order:', error);
+      alert('An error occurred while creating the order.');
+    }
   };
 
   const handleCustomizePress = () => {
     navigation.navigate('Blank', { product });
+    console.log('PRo',product);
   };
-  
+
   const handleAddToCart = async () => {
     try {
-      // Step 1: Retrieve the user_id from AsyncStorage
-      const userId = await AsyncStorage.getItem('userId'); // Ensure 'userId' is stored during login
-      
+      const userId = await AsyncStorage.getItem('userId');
       if (!userId) {
-        alert('Please log in to add items to your cart.');
+        alert('Please log in to add to the cart.');
         return;
       }
   
-      // Step 2: Prepare the data to send
-      const { name, price, id } = product; // Use the product object from your props or state
+      const { _id, name, price, description, image, size = 'M', category = 'General' } = product;
+  
       const data = {
-        product_name: name, // Match parameter names exactly as expected by PHP
-        id, // This corresponds to the 'product_id' in the PHP code
-        price,
-        user_id: userId,
+        userID: userId, // Update to userID
+        productID: _id, // Update to productID
       };
   
-      // Step 3: Send data to the PHP API
-      const response = await fetch('http://jerseyshop.iceiy.com/dagdag.php', {
+      console.log('Sending data to AddToCart API:', data);
+  
+      const response = await fetch('https://jerseystore-server.onrender.com/web/AddToCart', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-          'Host': 'jerseyshop.iceiy.com',
-          'User-Agent':
-            'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams(data).toString(), // Encode data as URL parameters
+        body: JSON.stringify(data),
       });
   
-      // Step 4: Handle the response
       const responseData = await response.json();
-      if (responseData.status === 'success') {
+      console.log('Response:', responseData);
+  
+      if (response.ok) {
         alert('Product added to cart!');
       } else {
         alert('Failed to add product to cart: ' + responseData.message);
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
-      alert('An error occurred while adding the product to your cart.');
+      alert('An error occurred while adding the product to the cart.');
     }
   };
   
+  
 
   return (
-    <ImageBackground source={background} style={styles.container} resizeMode="cover">
+    <ImageBackground source={require('../images/backgroundall.png')} style={styles.container} resizeMode="cover">
       <TouchableOpacity
         style={styles.backButton}
         onPress={() => navigation.goBack()}
@@ -83,10 +120,10 @@ const ProductViewScreen = ({ route, navigation }) => {
       </TouchableOpacity>
 
       <View style={styles.imageContainer}>
-      <Image
-  source={product.image ? { uri: product.image } : null} // Show image from URL if available, otherwise null
-  style={styles.productImage}
-/>
+        <Image
+          source={product.image ? { uri: product.image } : null}
+          style={styles.productImage}
+        />
       </View>
 
       {/* Dynamic Product Name */}
@@ -99,10 +136,10 @@ const ProductViewScreen = ({ route, navigation }) => {
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity
-          style={[styles.button, styles.buyNowButton]}
-          onPress={handleBuyNow}
+          style={[styles.button, styles.createOrderButton]}
+          onPress={handleCreateOrder}
         >
-          <Text style={styles.buttonText}>Buy Now</Text>
+          <Text style={styles.buttonText}>Create Order</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, styles.customizeButton]}
@@ -158,7 +195,7 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: 'black ',
+    color: 'black',
     marginTop: 20,
     textAlign: 'center',
   },
@@ -177,7 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
   },
-  buyNowButton: {
+  createOrderButton: {
     backgroundColor: 'green',
   },
   customizeButton: {
@@ -192,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   itemContainer: {
-    color: 'white', 
+    color: 'white',
     marginTop: 20,
     padding: 10,
     width: width * 0.9,

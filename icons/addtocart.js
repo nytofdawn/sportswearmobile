@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, Alert, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity, ImageBackground, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
@@ -8,157 +8,119 @@ import background from '../images/backgroundall.png';
 
 const CartScreen = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        setLoading(true);
-  
         // Get userId from AsyncStorage
         const storedUserId = await AsyncStorage.getItem('userId');
         if (!storedUserId) {
           Alert.alert('Error', 'User not logged in.');
-          setLoading(false);
           return;
         }
-  
-        // Fetch cart data from the API
-        const response = await fetch('http://jerseyshop.iceiy.com/karton.php', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-          },
-        });
-        const responseData = await response.json();
-        console.log('Fetched data:', responseData);
-  
-        if (responseData.status === 'success') {
-          const filteredCart = responseData.data.filter(
-            (item) => item.user_id === storedUserId
-          );
-  
-          setCartItems(filteredCart);
+
+        // Fetch cart data from the new API
+        const response = await axios.get(`https://jerseystore-server.onrender.com/web/getCartItems?userID=${storedUserId}`);
+
+
+        if (response.data.status === 'success') {
+          setCartItems(response.data.data);  // Update cart items with fetched data
         } else {
-          Alert.alert('Error', responseData.message);
+          Alert.alert('Error', response.data.message);
         }
       } catch (error) {
         console.error('Error fetching cart items:', error);
         Alert.alert('Error', 'An error occurred while fetching cart items.');
-      } finally {
-        setLoading(false);
       }
     };
-  
-    fetchCart();
+
+    fetchCart(); // Initial fetch of cart items
+    const intervalId = setInterval(fetchCart, 1000); // Set an interval to refetch cart every 3 seconds
+
+    // Clean up the interval on component unmount
+    return () => clearInterval(intervalId);
   }, []);
-  
 
-  const handleBuyNow = async (item, selectedColor) => {
-    console.log('Buy Now clicked for item:', item, 'Selected Color:', selectedColor);
-
+  const handleCreateOrder = async (product) => {
     try {
-      // Retrieve the user's email from AsyncStorage
-      const userEmail = await AsyncStorage.getItem('userEmail');
-      
-      if (!userEmail) {
-        Alert.alert('Error', 'You must be logged in to place an order.');
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        alert('Please log in to create an order.');
         return;
       }
 
-      // Use default color if none is selected
-      const colorToUse = selectedColor || 'default';  // Default color is 'default' if not selected
+      // Ensure the 'product' has all necessary fields
+      const { name, price, _id, description, image, size = 'M', category = 'General', quantity = 1 } = product;
 
-      // Send order creation request to the API
-      const response = await axios.post('http://jerseyshop.iceiy.com/create_order.php', {
-        email: userEmail,  // Send the logged-in user's email
-        product_id: item.product_id,
-        product_name: item.product_name,
-        price: item.price,
-        color: colorToUse,  // Use the selected color or default color
-      }, {
+      if (!name || !price || !category || !quantity) {
+        alert('Missing required fields: name, price, category, and quantity.');
+        return;
+      }
+
+      const data = {
+        userId,
+        name: name,
+        size,
+        category,
+        price,
+        quantity,
+        totalAmount: price * quantity,
+        status: 'pending',
+      };
+
+
+      const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-          'Host': 'jerseyshop.iceiy.com',
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-        }
+        },
+        body: JSON.stringify(data),
       });
 
-      // Log the API response to help debug the issue
-      console.log('API Response:', response.data);
+      const responseData = await response.json();
 
-      if (response.data.success) {
-        Alert.alert('Success', 'Order created successfully!');
-        
-        // After order creation, remove the item from the cart locally
-        const updatedCart = cartItems.filter(cartItem => cartItem.id !== item.id);
-        setCartItems(updatedCart);
+      console.log('Response status:', response.status); // Log HTTP status
+      console.log('Response data:', responseData); // Log the entire response
+
+      if (response.ok && responseData._id) {
+        alert('Order successfully created!');
+        // Remove the item from the cart after a successful purchase
+        handleDeleteItem(product._id || product.productID?._id);
       } else {
-        Alert.alert('Error', 'Failed to create order.');
+        const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
+        alert('Failed to create order: ' + errorMessage);
       }
     } catch (error) {
       console.error('Error creating order:', error);
-      Alert.alert('Error', 'An error occurred while creating the order.');
+      alert('An error occurred while creating the order.');
     }
   };
 
-  const handleDelete = async (productId) => {
-    Alert.alert(
-      'Confirm Deletion', // Title of the alert
-      'Are you sure you want to delete this item?', // Message
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel', // This styles the button as a "Cancel" action
-        },
-        {
-          text: 'Delete',
-          style: 'destructive', // This styles the button to indicate a destructive action
-          onPress: async () => {
-            try {
-              console.log('Product ID', productId);
-  
-              // Send the 'id' in the request body
-              const response = await axios.post(
-                'http://jerseyshop.iceiy.com/tanggal_baga.php',
-                { id: productId }, // Send 'id' instead of 'product_id'
-                {
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-                    'Host': 'jerseyshop.iceiy.com',
-                    'User-Agent': 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-                  },
-                }
-              );
-  
-              console.log('Delete response:', response.data);
-  
-              // Check if the item was deleted successfully
-              if (response.data.status === 'success') {
-                Alert.alert('Success', response.data.message);
-                // Remove the deleted item from the local cart list
-                const updatedCart = cartItems.filter(cartItem => cartItem.id !== productId);
-                setCartItems(updatedCart);
-              } else {
-                Alert.alert('Error', response.data.message);
-              }
-            } catch (error) {
-              console.error('Error deleting item:', error);
-              Alert.alert('Error', 'An error occurred while deleting the item.');
-            }
-          },
-        },
-      ]
-    );
+  // Handle deleting item from cart with real-time UI update
+  const handleDeleteItem = async (itemId) => {
+    try {
+      const storedUserId = await AsyncStorage.getItem('userId');
+      if (!storedUserId) {
+        Alert.alert('Error', 'User not logged in.');
+        return;
+      }
+
+      const response = await axios.delete('https://jerseystore-server.onrender.com/web/deleteFromCart', {
+        data: { userID: storedUserId, productID: itemId },
+      });
+
+      if (response.data.status === 'success') {
+        // Immediately update the cart items state to remove the deleted item
+        setCartItems(prevCartItems => prevCartItems.filter(item => item._id !== itemId));
+        Alert.alert('Success', 'Item successfully deleted.');
+      } else {
+        Alert.alert('Error', response.data.message || 'Failed to delete item.');
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      Alert.alert('Error', 'An error occurred while deleting the item.');
+    }
   };
-  
-  
-  
 
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
@@ -171,25 +133,40 @@ const CartScreen = ({ navigation }) => {
       ) : (
         <FlatList
           data={cartItems}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item._id || (item.productID && item.productID._id) || 'default-key'}
           renderItem={({ item }) => (
             <View style={styles.itemContainer}>
-              <Text style={styles.itemText}>Product: {item.product_name}</Text>
-              <Text style={styles.itemText}>Price: PHP{parseFloat(item.price).toFixed(2)}</Text>
-              
-              <TouchableOpacity 
-                style={styles.cancelButton} 
-                onPress={() => handleDelete(item.id)}
-              >
-                <Text style={styles.buttonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.buyNowButton} 
-                onPress={() => handleBuyNow(item)}
-              >
-                <Text style={styles.buttonText}>Buy Now</Text>
-              </TouchableOpacity>
+              {item.productID && item.productID.image ? (
+                <Image
+                  source={{ uri: item.productID.image }}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.productImage} />
+              )}
+              <View style={styles.textContainer}>
+                <Text style={styles.itemText}>
+                  Product: {item.productID ? item.productID.product_name : 'Unknown Product'}
+                </Text>
+                <Text style={styles.itemText}>
+                  Price: PHP {item.productID && item.productID.price ? parseFloat(item.productID.price).toFixed(2) : '0.00'}
+                </Text>
+              </View>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.buyNowButton}
+                  onPress={() => handleCreateOrder(item.productID)}
+                >
+                  <Text style={styles.buttonText}>Buy Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDeleteItem(item.productID ? item.productID._id : item._id)}
+                >
+                  <Text style={styles.buttonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         />
@@ -216,7 +193,18 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 8,
     elevation: 2,
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  productImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 16,
+    backgroundColor: '#f0f0f0',
+  },
+  textContainer: {
+    flex: 1,
   },
   itemText: {
     fontSize: 16,
@@ -226,27 +214,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 20,
     left: 10,
-    zIndex: 1,
+    zIndex: 10,
   },
-  cancelButton: {
-    backgroundColor: '#f44336',
-    padding: 8,
-    borderRadius: 8,
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    elevation: 2,
+  buttonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   buyNowButton: {
     backgroundColor: '#4CAF50',
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginRight: 8,
     borderRadius: 8,
-    marginTop: 8,
-    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#f44336',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
   },
 });
 

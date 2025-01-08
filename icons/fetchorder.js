@@ -3,64 +3,67 @@ import { View, Text, FlatList, StyleSheet, ImageBackground, TouchableOpacity } f
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
-
 import background from '../images/backgroundall.png';
 
-const FetchOrderScreen = ({ navigation }) => { // Added navigation prop here
+const FetchOrderScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
   const [userEmail, setUserEmail] = useState(''); // Store the current user's email
 
+  // Fetch the userEmail from AsyncStorage when the component mounts
   useEffect(() => {
     const getUserEmail = async () => {
       try {
-        const email = await AsyncStorage.getItem('userEmail'); // Retrieve the email of the logged-in user
+        const email = await AsyncStorage.getItem('userEmail'); // Retrieve the userEmail of the logged-in user
         if (email) {
           setUserEmail(email); // Update the state with the user's email
         } else {
-          console.log('No email found in AsyncStorage');
+          console.log('No userEmail found in AsyncStorage');
         }
       } catch (error) {
-        console.error('Error getting user email from AsyncStorage:', error);
+        console.error('Error getting userEmail from AsyncStorage:', error);
       }
     };
 
     getUserEmail(); // Fetch user's email when the component mounts
   }, []);
 
+  // Fetch orders and filter them based on userEmail
   useEffect(() => {
-    if (!userEmail) {
-      return; // If email is not yet fetched, don't proceed
-    }
-
     const fetchOrders = async () => {
       try {
-        const response = await axios.get('http://jerseyshop.iceiy.com/yung_order.php', {
+        const response = await axios.get('https://jerseystore-server.onrender.com/web/getOrder', {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent':
-              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-          },
-          params: {
-            email: userEmail, // Pass user's email as a query parameter
           },
         });
-        const filteredOrders = response.data.filter((order) => order.email === userEmail);
-        setOrders(filteredOrders); // Update state with filtered orders
+
+        console.log('Response Data:', response.data);
+
+        if (Array.isArray(response.data.data)) {
+          // Filter the orders based on userEmail matching the email in the response
+          const filteredOrders = response.data.data.filter(order => order.email === userEmail);
+          setOrders(filteredOrders); // Set filtered orders
+        } else {
+          console.log('Response data is not an array:', response.data);
+        }
       } catch (error) {
         console.error('Error fetching orders:', error);
       }
     };
 
-    fetchOrders();
-  }, [userEmail]);
+    if (userEmail) {
+      fetchOrders(); // Fetch orders when userEmail is available
+    }
+  }, [userEmail]); // Re-run when userEmail changes
 
+  // Render each order item
   const renderOrderItem = ({ item }) => (
     <View style={styles.orderItem}>
-      <Text style={styles.productName}>Product Name: {item.product_name || 'N/A'}</Text>
-      <Text style={styles.orderAt}>Order At: {item.created_at || 'Unknown'}</Text>
-      <Text style={styles.orderText}>Color: {item.color || 'N/A'}</Text>
+      <Text style={styles.productName}>Product Name: {item.name || 'N/A'}</Text>
+      <Text style={styles.orderAt}>Order At: {item.createdAt || 'Unknown'}</Text>
+      <Text style={styles.orderText}>Category: {item.category || 'N/A'}</Text>
+      <Text style={styles.orderText}>Status: {item.status || 'N/A'}</Text>
+      <Text>Email: {item.email}</Text>
     </View>
   );
 
@@ -78,7 +81,7 @@ const FetchOrderScreen = ({ navigation }) => { // Added navigation prop here
       ) : (
         <FlatList
           data={orders}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item._id.toString()} // Ensure proper key extraction from MongoDB ObjectId
           renderItem={renderOrderItem}
         />
       )}
@@ -105,7 +108,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  
   productName: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -115,11 +117,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555',
   },
+  orderText: {
+    fontSize: 14,
+    color: '#555',
+  },
   noOrdersText: {
     fontSize: 16,
     color: 'gray',
     textAlign: 'center',
     marginVertical: 20,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
   },
 });
 

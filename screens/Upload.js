@@ -106,7 +106,7 @@ const FormScreen = ({ navigation }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097', // Keep the cookie in the header
+          'Cookie': '__test=065785095a0ce09527d0e77166933b42', // Keep the cookie in the header
           'Host': 'jerseyshop.iceiy.com',
           'User-Agent':
               'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',

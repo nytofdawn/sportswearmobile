@@ -1,42 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity, ImageBackground, Image, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons'; // Import vector icons
 
 import backg from '../images/backgroundall.png';
 
 const NotificationScreen = ({ navigation }) => {
-  const [customDesigns, setCustomDesigns] = useState([]);
-  const [filteredDesigns, setFilteredDesigns] = useState([]);
-  const [userId, setUserId] = useState(null);
+  const [logos, setLogos] = useState([]);
+  const [userEmail, setUserEmail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch userId from AsyncStorage
+  // Fetch user email from AsyncStorage
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchUserEmail = async () => {
       try {
-        const storedUserId = await AsyncStorage.getItem('userId'); // Adjust the key as per your AsyncStorage key
-        if (storedUserId) {
-          setUserId(storedUserId);
+        const storedUserEmail = await AsyncStorage.getItem('userEmail'); // Adjust the key as per your AsyncStorage key
+        if (storedUserEmail) {
+          setUserEmail(storedUserEmail);
         }
       } catch (error) {
-        console.error('Error fetching userId from AsyncStorage:', error);
+        console.error('Error fetching userEmail from AsyncStorage:', error);
       }
     };
 
-    fetchUserId();
+    fetchUserEmail();
   }, []);
 
+  // Fetch all logos data
   useEffect(() => {
-    const fetchCustomDesigns = async () => {
+    const fetchLogos = async () => {
       try {
-        const response = await fetch('http://jerseyshop.iceiy.com/yung_design.php', {
+        const response = await fetch('https://jerseystore-server.onrender.com/web/logos', { // Replace with your API endpoint
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent':
-              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
         });
 
@@ -45,72 +43,67 @@ const NotificationScreen = ({ navigation }) => {
         }
 
         const data = await response.json();
+
         if (Array.isArray(data)) {
-          setCustomDesigns(data);
+          // Filter logos by userEmail from AsyncStorage
+          const filteredLogos = data.filter((logo) => logo.email === userEmail);
+          setLogos(filteredLogos);
         } else {
-          console.log('No custom designs found');
+          console.log('No logos found');
         }
       } catch (error) {
-        console.error('Error fetching custom designs:', error);
+        setError('Error fetching logos data. Please try again later.');
+        console.error('Error fetching logos:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchCustomDesigns();
-  }, []);
+    if (userEmail) {
+      fetchLogos();
+    }
+  }, [userEmail]);
 
-  // Filter designs based on userId and show alerts
-  useEffect(() => {
-    if (userId && customDesigns.length > 0) {
-      const userDesigns = customDesigns.filter((design) => design.user_id === userId);
+  const renderLogo = ({ item }) => {
+    return (
+      <View style={styles.logoItem}>
+        <View style={styles.logoContainer}>
+          {item.logoUrl ? (
+            <Image source={{ uri: item.logoUrl }} style={styles.logoImage} />
+          ) : (
+            <Text>No Image</Text>
+          )}
+        </View>
+        <Text style={styles.logoName}>Logo: {item.name}</Text>
+        <Text style={styles.approvalText}>Approval: {item.approval ? 'Approved' : 'Not Approved'}</Text>
+      </View>
+    );
+  };
 
-      if (userDesigns.length === 0) {
-        Alert.alert(
-          "Notice",
-          "It looks like you don't have pending works. Create and suggest your logo in customization."
-        );
-        setFilteredDesigns([]);
-        return;
-      }
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator size="large" color="#0000ff" />;
+    }
 
-      const approvedDesigns = userDesigns.filter((design) => design.approval === "1");
-      const notApprovedDesigns = userDesigns.filter((design) => design.approval !== "1");
-
-      setFilteredDesigns(approvedDesigns);
-
-      // Show alerts for approved designs
-      approvedDesigns.forEach((design) => {
-        Alert.alert(
-          "SUCCESS!",
-          `Your Customized Product Jersey Number [${design.jerseyNumber}] is Successfully Approved`,
-          [{ text: "OK" }]
-        );
-      });
-
-      // Show alerts for not approved designs
-      notApprovedDesigns.forEach((design) => {
-        Alert.alert(
-          "OOPS",
-          `It looks like you have registered Jersey Number [${design.jerseyNumber}]. Unfortunately, It's not Approved Yet.`,
-          [{ text: "OK" }]
-        );
-      });
-    } else if (userId) {
-      Alert.alert(
-        "Notice",
-        "It looks like you don't have pending works. Create and suggest your logo in customization."
+    if (error) {
+      return (
+        <Text style={styles.errorText}>{error}</Text>
       );
     }
-  }, [userId, customDesigns]);
 
-  const renderCustomDesign = ({ item }) => {
     return (
-      <View style={styles.customDesignItem}>
-        <View style={styles.logoContainer}>
-          {/* Replace logo image with shirt icon */}
-          <Icon name="shirt" size={50} color="#000" style={styles.shirtIcon} />
-        </View>
-        <Text style={styles.approvalText}>Jersey Number: {item.jerseyNumber}</Text>
-      </View>
+      <>
+        <Text style={styles.title}>Your Logos</Text>
+        {logos.length > 0 ? (
+          <FlatList
+            data={logos}
+            renderItem={renderLogo}
+            keyExtractor={(item) => item._id.toString()} // Ensure the key is unique for each logo
+          />
+        ) : (
+          <Text style={styles.noLogosText}>No logos available at the moment.</Text>
+        )}
+      </>
     );
   };
 
@@ -124,18 +117,7 @@ const NotificationScreen = ({ navigation }) => {
           <Icon name="chevron-back-outline" size={30} color="#000" />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Approved Custom Designs</Text>
-        {filteredDesigns.length > 0 ? (
-          <FlatList
-            data={filteredDesigns}
-            renderItem={renderCustomDesign}
-            keyExtractor={(item) => item.id.toString()}
-          />
-        ) : (
-          <Text style={styles.noDesignsText}>
-            It looks like you don't have pending works. Create and suggest your logo in customization.
-          </Text>
-        )}
+        {renderContent()}
       </View>
     </ImageBackground>
   );
@@ -167,7 +149,7 @@ const styles = StyleSheet.create({
     marginTop: 50, // Account for the back button
     textAlign: 'center',
   },
-  customDesignItem: {
+  logoItem: {
     padding: 10,
     marginBottom: 10,
     backgroundColor: '#e6f7ff',
@@ -181,19 +163,29 @@ const styles = StyleSheet.create({
   logoContainer: {
     marginBottom: 10,
   },
-  shirtIcon: {
-    backgroundColor: '#e6e6e6',
-    padding: 10,
-    borderRadius: 5,
+  logoImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
   },
-  approvalText: {
+  logoName: {
     fontSize: 16,
     color: '#333',
     fontWeight: 'bold',
   },
-  noDesignsText: {
+  approvalText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  noLogosText: {
     fontSize: 16,
     color: 'gray',
+    textAlign: 'center',
+    marginVertical: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'red',
     textAlign: 'center',
     marginVertical: 20,
   },

@@ -16,68 +16,49 @@ import background from '../images/backgroundall.png';
 import loginb from '../images/login.png';
 import logo from '../images/logo.png';
 
-export default function LoginScreen({ navigation }) {
+const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-
 
   const handleLogin = async () => {
     try {
-      // Send POST request
       const response = await axios.post(
-        'http://jerseyshop.iceiy.com/login.php',
-        {
-          email: email,
-          password: password,
-        },
+        'https://jerseystore-server.onrender.com/web/loginUser',
+        { email, password },
         {
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': '__test=bfbecd9d45acbaeacf538c36e183a097',
-            'Host': 'jerseyshop.iceiy.com',
-            'User-Agent':
-              'Mozilla/5.0 (Linux; Android 8.0.0; SM-G955U Build/R16NW) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
           },
-          withCredentials: true, // Ensure cookies are included in requests
         }
       );
   
-      console.log('res', response);
+      console.log('Login Response:', response.data);
   
-      if (response.status === 200 && response.data.success) {
-        const userId = response.data.user.id;
-        const userEmail = response.data.user.email;
-        const cookie = response.headers['cookie']; // Extract the cookie from response headers
-  
-        if (cookie) {
-          await AsyncStorage.setItem('userCookie', JSON.stringify(cookie));
-          console.log('User Cookie saved:', JSON.stringify(cookie)); // Log the saved cookie
-        }
+      if (response.status === 200 && response.data.isLoggedIn) {
+        const { id: userId, email: userEmail } = response.data.user;
+        const token = response.data.token;
   
         await AsyncStorage.setItem('userEmail', userEmail);
         await AsyncStorage.setItem('userId', userId.toString());
-        
+        await AsyncStorage.setItem('userToken', token);
   
         Alert.alert('Login Successful', 'Welcome back!', [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('Dashboard'), // Adjust navigation target
+            onPress: () => navigation.navigate('Dashboard'),
           },
         ]);
       } else {
-        // Show alert for incorrect credentials
         Alert.alert(
           'Login Failed',
           response.data.message || 'Incorrect email or password. Please try again.'
         );
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error:', error.response?.data || error.message);
       Alert.alert('Error', 'An error occurred while logging in. Please try again.');
     }
   };
-  
   
 
   return (
@@ -109,7 +90,7 @@ export default function LoginScreen({ navigation }) {
       </ImageBackground>
     </ImageBackground>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -171,3 +152,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
+export default LoginScreen;

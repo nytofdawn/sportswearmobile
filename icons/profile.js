@@ -40,9 +40,7 @@ const ProfileScreen = ({ navigation }) => {
           text: "Log Out",
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('userEmail');
-              await AsyncStorage.removeItem('userName');
-              await AsyncStorage.removeItem('userId');
+              await AsyncStorage.clear();
               console.log('User logged out');
               navigation.navigate('Login');
             } catch (error) {
