@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity, ImageBackgro
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
 import background from '../images/backgroundall.png';
@@ -13,19 +14,17 @@ const CartScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchCart = async () => {
       try {
-        // Get userId from AsyncStorage
         const storedUserId = await AsyncStorage.getItem('userId');
         if (!storedUserId) {
           Alert.alert('Error', 'User not logged in.');
           return;
         }
 
-        // Fetch cart data from the new API
         const response = await axios.get(`https://jerseystore-server.onrender.com/web/getCartItems?userID=${storedUserId}`);
-
-
+        
         if (response.data.status === 'success') {
-          setCartItems(response.data.data);  // Update cart items with fetched data
+          const groupedCartItems = groupCartItems(response.data.data);
+          setCartItems(groupedCartItems);
         } else {
           Alert.alert('Error', response.data.message);
         }
@@ -35,12 +34,35 @@ const CartScreen = ({ navigation }) => {
       }
     };
 
-    fetchCart(); // Initial fetch of cart items
-    const intervalId = setInterval(fetchCart, 1000); // Set an interval to refetch cart every 3 seconds
+    fetchCart();
+    const intervalId = setInterval(fetchCart, 1000);
 
-    // Clean up the interval on component unmount
     return () => clearInterval(intervalId);
   }, []);
+
+  // Helper function to group cart items by product ID and accumulate the quantity
+  const groupCartItems = (cartItems) => {
+    const groupedItems = [];
+    const productMap = new Map();
+
+    cartItems.forEach((item) => {
+      const productID = item.productID._id;
+      const existingItem = productMap.get(productID);
+      if (existingItem) {
+        existingItem.quantity += 1; // Increment the quantity
+      } else {
+        const newItem = { ...item, quantity: 1 };
+        productMap.set(productID, newItem);
+      }
+    });
+
+    // Convert Map to array
+    productMap.forEach((item) => {
+      groupedItems.push(item);
+    });
+
+    return groupedItems;
+  };
 
   const createPaymentLink = async () => {
     try {
@@ -57,12 +79,10 @@ const CartScreen = ({ navigation }) => {
           'Content-Type': 'application/json'
         }
       });
-      // console.log(res.data);
       const paymentInfos = {
         paymentLinkID: res.data.data.id,
         paymentLinkUrl: res.data.data.attributes.checkout_url
       }
-      // console.log(paymentInfos);
       return paymentInfos;
     } catch (err) {
       console.error(err);
@@ -77,7 +97,6 @@ const CartScreen = ({ navigation }) => {
         return;
       }
 
-      // Ensure the 'product' has all necessary fields
       const { name, price, _id, description, image, size = 'M', category = 'General', quantity = 1 } = product;
 
       if (!name || !price || !category || !quantity) {
@@ -96,40 +115,16 @@ const CartScreen = ({ navigation }) => {
         status: 'pending',
       };
 
-      // console.log(data);
-      createPaymentLink().then(res=>{
-        navigation.navigate("CartPay", {paymentInfo: res, data: data, product: product});
-      })
-  
+      createPaymentLink().then(res => {
+        navigation.navigate("CartPay", { paymentInfo: res, data: data, product: product });
+      });
 
-      // const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(data),
-      // });
-
-      // const responseData = await response.json();
-
-      // console.log('Response status:', response.status); // Log HTTP status
-      // console.log('Response data:', responseData); // Log the entire response
-
-      // if (response.ok && responseData._id) {
-      //   alert('Order successfully created!');
-      //   // Remove the item from the cart after a successful purchase
-      //   handleDeleteItem(product._id || product.productID?._id);
-      // } else {
-      //   const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
-      //   alert('Failed to create order: ' + errorMessage);
-      // }
     } catch (error) {
       console.error('Error creating order:', error);
       alert('An error occurred while creating the order.');
     }
   };
 
-  // Handle deleting item from cart with real-time UI update
   const handleDeleteItem = async (itemId) => {
     try {
       const storedUserId = await AsyncStorage.getItem('userId');
@@ -143,7 +138,6 @@ const CartScreen = ({ navigation }) => {
       });
 
       if (response.data.status === 'success') {
-        // Immediately update the cart items state to remove the deleted item
         setCartItems(prevCartItems => prevCartItems.filter(item => item._id !== itemId));
         Alert.alert('Success', 'Item successfully deleted.');
       } else {
@@ -157,8 +151,14 @@ const CartScreen = ({ navigation }) => {
 
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>Primo's CART</Text>
+      </View>
+
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
-        <Icon name="chevron-back" size={30} color="#000" />
+        <View style={styles.circle}>
+          <Icon name="chevron-back" size={50} color="#fff" />
+        </View>
       </TouchableOpacity>
 
       {cartItems.length === 0 ? (
@@ -184,6 +184,9 @@ const CartScreen = ({ navigation }) => {
                 </Text>
                 <Text style={styles.itemText}>
                   Price: PHP {item.productID && item.productID.price ? parseFloat(item.productID.price).toFixed(2) : '0.00'}
+                </Text>
+                <Text style={styles.itemText}>
+                  Quantity: {item.quantity}
                 </Text>
               </View>
               <View style={styles.buttonContainer}>
@@ -214,16 +217,34 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#f9f9f9',
   },
+  headerContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    marginTop:25,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+  },
   emptyText: {
-    fontSize: 18,
+    fontSize: 25,
     color: '#888',
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 60,
   },
   itemContainer: {
     backgroundColor: '#fff',
     padding: 16,
     marginVertical: 8,
+    marginTop: 25,
     borderRadius: 8,
     elevation: 2,
     flexDirection: 'row',
@@ -245,9 +266,17 @@ const styles = StyleSheet.create({
   },
   backIconContainer: {
     position: 'absolute',
-    top: 20,
-    left: 10,
+    top: 40,
+    left: 20,
     zIndex: 10,
+  },
+  circle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',

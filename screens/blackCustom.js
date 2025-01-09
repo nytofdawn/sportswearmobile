@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput, ImageBackground } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
+
+const backgroundimg = require('../images/backgroundall.png');
 
 const BlankCanvas = () => {
   const navigation = useNavigation();
@@ -195,10 +197,15 @@ const BlankCanvas = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="chevron-back" size={30} color="black" />
-      </TouchableOpacity>
+    <ImageBackground
+      source={backgroundimg} // Assign the imported background image
+      style={styles.container} // Apply your styles
+    >
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+            <View style={styles.circle}>
+            <Icon name="chevron-back" size={50} color="#fff" />
+          </View>
+        </TouchableOpacity>
 
       <Text style={styles.headerText}>Customize Your Product</Text>
 
@@ -227,7 +234,7 @@ const BlankCanvas = () => {
       </TouchableOpacity>
 
       <Text style={styles.text}>Size: {productDetails.size}</Text>
-      <Text style={styles.text}>Price: ${productDetails.price}</Text>
+      <Text style={styles.text}>Price: PHP{productDetails.price}</Text>
 
       <TextInput 
         style={styles.input} 
@@ -253,21 +260,33 @@ const BlankCanvas = () => {
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Submit</Text>
       </TouchableOpacity>
-    </View>
+      </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-    padding: 20,
+    padding: 30,
   },
-  backButton: {
-    padding: 10,
+  backIconContainer: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 10,
+  },
+  circle: {
+    width: 60, // Size of the circle
+    height: 60, // Size of the circle
+    borderRadius: 30, // Make it circular
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Background color of the circle
+    justifyContent: 'center', // Center the icon
+    alignItems: 'center', // Center the icon
   },
   headerText: {
     fontSize: 24,
+    marginTop:25,
+    marginLeft:25,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,

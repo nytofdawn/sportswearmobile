@@ -70,12 +70,11 @@ const FetchOrderScreen = ({ navigation }) => {
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
       <Text style={styles.title}>My Orders</Text>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()} // Navigate back
-      >
-        <Icon name="chevron-back-outline" size={30} color="#000" />
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+          <View style={styles.circle}>
+              <Icon name="chevron-back" size={50} color="#fff" />
+            </View>
+          </TouchableOpacity>
       {orders.length === 0 ? (
         <Text style={styles.noOrdersText}>No orders found.</Text>
       ) : (
@@ -96,6 +95,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   title: {
+    marginTop:45,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
@@ -127,10 +127,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 20,
   },
-  backButton: {
+  backIconContainer: {
     position: 'absolute',
     top: 40,
     left: 20,
+    zIndex: 10,
+  },
+  circle: {
+    width: 60, // Size of the circle
+    height: 60, // Size of the circle
+    borderRadius: 30, // Make it circular
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Background color of the circle
+    justifyContent: 'center', // Center the icon
+    alignItems: 'center', // Center the icon
   },
 });
 

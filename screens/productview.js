@@ -8,7 +8,7 @@ import {
   ImageBackground,
   Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
@@ -129,13 +129,11 @@ const ProductViewScreen = ({ route, navigation }) => {
 
   return (
     <ImageBackground source={require('../images/backgroundall.png')} style={styles.container} resizeMode="cover">
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-        accessibilityLabel="Go back"
-      >
-        <Ionicons name="chevron-back" size={55} color="#000" />
-      </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+                <View style={styles.circle}>
+                    <Icon name="chevron-back" size={50} color="#fff" />
+                  </View>
+                </TouchableOpacity>
 
       <View style={styles.imageContainer}>
         <Image
@@ -157,13 +155,13 @@ const ProductViewScreen = ({ route, navigation }) => {
           style={[styles.button, styles.createOrderButton]}
           onPress={handleCreateOrder}
         >
-          <Text style={styles.buttonText}>Create Order</Text>
+          <Text style={styles.buttonText}>Buy Now</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, styles.customizeButton]}
           onPress={handleCustomizePress}
         >
-          <Text style={styles.buttonText}>Customize</Text>
+          <Text style={styles.buttonText}>Buy with Custom</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, styles.addToCartButton]}
@@ -182,11 +180,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
   },
-  backButton: {
+  backIconContainer: {
     position: 'absolute',
     top: 40,
     left: 20,
     zIndex: 10,
+  },
+  circle: {
+    width: 60, // Size of the circle
+    height: 60, // Size of the circle
+    borderRadius: 30, // Make it circular
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Background color of the circle
+    justifyContent: 'center', // Center the icon
+    alignItems: 'center', // Center the icon
   },
   imageContainer: {
     width: width * 1,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, FlatList, Image, StyleSheet, TouchableOpacity, Text, ImageBackground, TextInput } from 'react-native';
+import { View, FlatList, Image, StyleSheet, TouchableOpacity, Text, ImageBackground, TextInput, Alert, BackHandler } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
 
 import background from '../images/backgroundall.png';
 
@@ -26,34 +27,69 @@ const DashboardScreen = () => {
     };
   
     fetchProducts();
-  }, []);
-  
 
-  // Filter products based on the search query
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    // Handle back button press event
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Show alert with options
+      Alert.alert(
+        'Exit or Logout',
+        'Do you want to logout or exit the app?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => null, // Do nothing
+            style: 'cancel',
+          },
+          {
+            text: 'Logout',
+            onPress: async () => {
+              try {
+                await AsyncStorage.clear(); // Clear AsyncStorage
+                console.log('User logged out');
+                navigation.navigate('Login'); // Navigate to Login screen
+              } catch (error) {
+                console.error('Error logging out:', error);
+              }
+            },
+          },
+          {
+            text: 'Exit',
+            onPress: () => BackHandler.exitApp(), // Close the app
+          },
+        ],
+        { cancelable: true } // Allow closing the alert when tapped outside
+      );
+      return true; // Prevent default back button behavior (exit)
+    });
 
-  const listahan =() => {
+    // Cleanup the event listener when the component is unmounted
+    return () => backHandler.remove();
+  }, [navigation]);
+
+  const listahan = () => {
     navigation.navigate('Orderko');
   };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-  style={styles.productContainer}
-  onPress={() => {
-    console.log('Navigating with product:', item); // Debug log
-    navigation.navigate('ProductView', { product: item });
-  }}
->
-  <Image
-    source={{ uri: item.image }}
-    style={styles.productImage}
-  />
-  <Text style={styles.productName}>{item.name}</Text>
-  <Text style={styles.productPrice}>Php: {item.price}</Text>
-</TouchableOpacity>
+      style={styles.productContainer}
+      onPress={() => {
+        console.log('Navigating with product:', item); // Debug log
+        navigation.navigate('ProductView', { product: item });
+      }}
+    >
+      <Image
+        source={{ uri: item.image }}
+        style={styles.productImage}
+      />
+      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productPrice}>Php: {item.price}</Text>
+    </TouchableOpacity>
+  );
 
+  // Filter products based on the search query
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -61,48 +97,46 @@ const DashboardScreen = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search Products"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search Products"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+            </View>
             <TouchableOpacity style={styles.icon}
-            onPress={() => navigation.navigate('Notification')}>
+              onPress={() => navigation.navigate('Notification')}>
               <Ionicons name="notifications" size={30} color="black" />
             </TouchableOpacity>
             <TouchableOpacity style={styles.icon}
-            onPress={()=>navigation.navigate('Karton')}>
+              onPress={() => navigation.navigate('Karton')}>
               <Ionicons name="cart" size={30} color="black" />
             </TouchableOpacity>
           </View>
-          
         </View>
 
         <View style={styles.hatdog}>
           <TouchableOpacity style={styles.icon}
-          onPress={() => navigation.navigate('Profile')}>
+            onPress={() => navigation.navigate('Profile')}>
             <Ionicons name="person" size={35} color="black" />
           </TouchableOpacity>
           <Text style={styles.allProductsText}>
             All Products
           </Text>
           <TouchableOpacity style={styles.icon}
-          onPress={listahan}>
+            onPress={listahan}>
             <Ionicons name="list" size={35} color="black" />
           </TouchableOpacity>
         </View>
 
         <FlatList
-  data={filteredProducts}
-  keyExtractor={(item) => (item._id ? item._id.toString() : Math.random().toString())}
-  numColumns={2}
-  renderItem={renderItem}
-  contentContainerStyle={styles.productList}
-/>
-
+          data={filteredProducts}
+          keyExtractor={(item) => (item._id ? item._id.toString() : Math.random().toString())}
+          numColumns={2}
+          renderItem={renderItem}
+          contentContainerStyle={styles.productList}
+        />
       </View>
     </ImageBackground>
   );
@@ -113,7 +147,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginTop:40,
+    marginTop: 40,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -127,7 +161,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start', // Align icons to the left
   },
   icon: {
-    marginHorizontal: 16,  // Adds equal space around the icons
+    marginHorizontal: 16, // Adds equal space around the icons
   },
   searchContainer: {
     flex: 1,

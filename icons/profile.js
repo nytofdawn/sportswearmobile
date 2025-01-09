@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, Alert, Image, ImageBackground, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons'; // Import the icon library
+import backgroundimage from '../images/sports.jpeg'; // Import the background image
 
 const ProfileScreen = ({ navigation }) => {
   const [userEmail, setUserEmail] = useState('');
@@ -54,17 +55,15 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ImageBackground
-      source={require('../images/sports.png')} // Update the path to your sports.png image
+      source={backgroundimage} // Use the imported background image
       style={styles.background}
     >
       <View style={styles.container}>
-        {/* Back Icon */}
-        <TouchableOpacity
-          style={styles.backIcon}
-          onPress={() => navigation.navigate('Dashboard')} // Navigate to Dashboard
-        >
-          <Icon name="chevron-back" size={30} color="#fff" />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+             <View style={styles.circle}>
+                <Icon name="chevron-back" size={30} color="#fff" />
+              </View>
+            </TouchableOpacity>
 
         <View style={styles.card}>
           <Text style={styles.title}>Profile Information</Text>
@@ -100,11 +99,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
   },
-  backIcon: {
+  backIconContainer: {
     position: 'absolute',
     top: 40,
     left: 20,
     zIndex: 10,
+  },
+  circle: {
+    width: 40, // Smaller size for the circle
+    height: 40, // Smaller size for the circle
+    borderRadius: 20, // Make it circular
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent black
+    justifyContent: 'center', // Center the icon
+    alignItems: 'center', // Center the icon
   },
   card: {
     backgroundColor: '#fff', // White background for the card

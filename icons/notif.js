@@ -110,12 +110,11 @@ const NotificationScreen = ({ navigation }) => {
   return (
     <ImageBackground source={backg} style={styles.container}>
       <View style={styles.container}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()} // Navigate back
-        >
-          <Icon name="chevron-back-outline" size={30} color="#000" />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+          <View style={styles.circle}>
+            <Icon name="chevron-back" size={30} color="#fff" />
+            </View>
+          </TouchableOpacity>
 
         {renderContent()}
       </View>
@@ -129,18 +128,19 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: 'transparent',
   },
-  backButton: {
+  backIconContainer: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    top: 40,
+    left: 20,
     zIndex: 10,
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    padding: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-    elevation: 5,
+  },
+  circle: {
+    width: 40, // Smaller size for the circle
+    height: 40, // Smaller size for the circle
+    borderRadius: 20, // Make it circular
+    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Semi-transparent black
+    justifyContent: 'center', // Center the icon
+    alignItems: 'center', // Center the icon
   },
   title: {
     fontSize: 24,
