@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import api_url from '../api';
 
 import background from '../images/backgroundall.png';
 import loginb from '../images/login.png';
@@ -23,7 +24,7 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     try {
       const response = await axios.post(
-        'https://jerseystore-server.onrender.com/web/loginUser',
+        `${api_url}/web/loginUser`,
         { email, password },
         {
           headers: {
@@ -31,17 +32,17 @@ const LoginScreen = ({ navigation }) => {
           },
         }
       );
-  
+
       console.log('Login Response:', response.data);
-  
+
       if (response.status === 200 && response.data.isLoggedIn) {
         const { id: userId, email: userEmail } = response.data.user;
         const token = response.data.token;
-  
+
         await AsyncStorage.setItem('userEmail', userEmail);
         await AsyncStorage.setItem('userId', userId.toString());
         await AsyncStorage.setItem('userToken', token);
-  
+
         Alert.alert('Login Successful', 'Welcome back!', [
           {
             text: 'OK',
@@ -55,20 +56,19 @@ const LoginScreen = ({ navigation }) => {
         );
       }
     } catch (error) {
-      // Check if it's a known issue like a failed login (e.g., user not found)
       if (error.response?.data?.message) {
-        // If the response contains a specific message, it's likely part of the expected flow
-        // So we only alert the user, without logging it as an error
         Alert.alert('Login Failed', error.response.data.message);
       } else {
-        // Only log unexpected errors to the console
         console.error('Unexpected Error:', error.response?.data || error.message);
         Alert.alert('Error', 'An error occurred while logging in. Please try again.');
       }
     }
   };
-  
-  
+
+  const handleForgotPassword = () => {
+    // Navigate to the Forgot Password screen
+    navigation.navigate('forgotpass');
+  };
 
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
@@ -95,6 +95,11 @@ const LoginScreen = ({ navigation }) => {
         />
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
+        </TouchableOpacity>
+
+        {/* Forgot Password Button */}
+        <TouchableOpacity onPress={handleForgotPassword}>
+          <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
         </TouchableOpacity>
       </ImageBackground>
     </ImageBackground>
@@ -159,6 +164,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  forgotPasswordText: {
+    color: '#007bff',
+    fontSize: 14,
+    marginTop: 20,
+    textDecorationLine: 'underline',
   },
 });
 

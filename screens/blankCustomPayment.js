@@ -4,6 +4,7 @@ import WebView from 'react-native-webview'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import axios from 'axios'
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
+import api_url from '../api';
 
 const BlankCustomPayment = () => {
     const nav = useNavigation();
@@ -68,7 +69,7 @@ const BlankCustomPayment = () => {
 
     const insertOrder = async () => {
         try {
-            const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
+            const createResponse = await fetch(`${api_url}/web/createdesign`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity, ImageBackgro
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import api_url from '../api';
 
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
 
@@ -20,7 +21,7 @@ const CartScreen = ({ navigation }) => {
           return;
         }
 
-        const response = await axios.get(`https://jerseystore-server.onrender.com/web/getCartItems?userID=${storedUserId}`);
+        const response = await axios.get(`${api_url}/web/getCartItems?userID=${storedUserId}`);
         
         if (response.data.status === 'success') {
           const groupedCartItems = groupCartItems(response.data.data);
@@ -133,7 +134,7 @@ const CartScreen = ({ navigation }) => {
         return;
       }
 
-      const response = await axios.delete('https://jerseystore-server.onrender.com/web/deleteFromCart', {
+      const response = await axios.delete(`${api_url}/web/deleteFromCart`, {
         data: { userID: storedUserId, productID: itemId },
       });
 

@@ -16,6 +16,8 @@ import CartScreen from './icons/addtocart.js';
 import Payment from './screens/payment.js';
 import BCPayment from './screens/blankCustomPayment.js'
 import CartPay from './icons/addtocartPayment.js';
+import AddressAndDeliveryScreen from './screens/addressanddelivery.js';
+import ForgotPasswordScreen from './screens/forgotpass.js';
 
 const Stack = createStackNavigator();
 
@@ -39,6 +41,8 @@ export default function App() {
           <Stack.Screen name="Orderko" component={FetchOrderScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Notification" component={NotificationScreen} />
+          <Stack.Screen name="AddressAndDeliveryScreen" component={AddressAndDeliveryScreen} />
+          <Stack.Screen name="forgotpass" component={ForgotPasswordScreen} />
           <Stack.Screen name="Karton" component={CartScreen} />
           <Stack.Screen name="Payment" component={Payment} />
           <Stack.Screen name="BCPayment" component={BCPayment} />

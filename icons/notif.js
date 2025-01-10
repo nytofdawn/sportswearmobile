@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity, ImageBackground, Image, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/Ionicons'; // Import vector icons
+import Icon from 'react-native-vector-icons/Ionicons';
+import api_url from '../api';
 
 import backg from '../images/backgroundall.png';
 
@@ -31,7 +32,7 @@ const NotificationScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchLogos = async () => {
       try {
-        const response = await fetch('https://jerseystore-server.onrender.com/web/logos', { // Replace with your API endpoint
+        const response = await fetch(`${api_url}/web/logos`, { // Replace with your API endpoint
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

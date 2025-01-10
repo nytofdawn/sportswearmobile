@@ -5,6 +5,7 @@ import WebView from 'react-native-webview'
 import { useNavigation } from '@react-navigation/native'
 import axios from 'axios'
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
+import api_url from '../api'
 
 const Payment = () => {
     const nav = useNavigation()
@@ -69,41 +70,42 @@ const Payment = () => {
 
     const insertOrder = async () => {
         try {
-            const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+            const response = await fetch(`${api_url}/web/CreateOrders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(orderData),
             });
-
+    
             const responseData = await response.json();
-
+    
             console.log('Response status:', response.status); // Log HTTP status
             console.log('Response data:', responseData); // Log the entire response
-
-            if (response.ok && responseData._id) {
+    
+            if (response.ok && responseData.order && responseData.order._id) {
                 Alert.alert(
                     'Payment Successful',
-                    'Your payment was successful! and Order successfully created!',
+                    'Your payment was successful! Order successfully created!',
                     [
                         {
                             text: 'OK',
                             onPress: () => {
                                 nav.navigate("Dashboard");
-
                             }
                         }
                     ]
                 );
             } else {
                 const errorMessage = responseData.message || `Unexpected error: ${response.status}`;
-                alert('Failed to create order: ' + errorMessage);
+                Alert.alert('Failed to create order', errorMessage);
             }
         } catch (error) {
             console.error('Error:', error);
+            Alert.alert('Failed to create order', 'An unexpected error occurred.');
         }
-    }
+    };
+    
 
     return (
         <View style={{ flex: 1 }}>

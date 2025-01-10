@@ -4,7 +4,9 @@ import WebView from 'react-native-webview'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from '@react-navigation/native'
 import axios from 'axios'
+import api_url from '../api';
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
+
 
 const AddtocartPayment = () => {
     const nav = useNavigation();
@@ -74,7 +76,7 @@ const AddtocartPayment = () => {
             return;
           }
     
-          const response = await axios.delete('https://jerseystore-server.onrender.com/web/deleteFromCart', {
+          const response = await axios.delete(`${api_url}/web/deleteFromCart`, {
             data: { userID: storedUserId, productID: itemId },
           });
     
@@ -93,7 +95,7 @@ const AddtocartPayment = () => {
 
     const insertOrder = async () => {
         try {
-            const response = await fetch('https://jerseystore-server.onrender.com/web/CreateOrders', {
+            const response = await fetch(`${api_url}/web/CreateOrders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

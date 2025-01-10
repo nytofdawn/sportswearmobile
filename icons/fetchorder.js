@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ImageBackground, TouchableOpacity, Alert } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import background from '../images/backgroundall.png';
+import api_url from '../api';
 
 const FetchOrderScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
@@ -27,22 +28,33 @@ const FetchOrderScreen = ({ navigation }) => {
     getUserEmail(); // Fetch user's email when the component mounts
   }, []);
 
-  // Fetch orders and filter them based on userEmail
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await axios.get('https://jerseystore-server.onrender.com/web/getOrder', {
+        const response = await axios.get(`${api_url}/web/getOrder`, {
           headers: {
             'Content-Type': 'application/json',
           },
         });
-
+  
         console.log('Response Data:', response.data);
-
+  
         if (Array.isArray(response.data.data)) {
           // Filter the orders based on userEmail matching the email in the response
           const filteredOrders = response.data.data.filter(order => order.email === userEmail);
           setOrders(filteredOrders); // Set filtered orders
+  
+          // Check for completed orders and show alerts
+          filteredOrders.forEach(order => {
+            if (order.status === 'completed') {
+              const productName = order.name || 'Unknown Product'; // Get product name
+              if (order.deliveryOption === 'Door-to-Door') {
+                Alert.alert('Order Update', `You have an order on the way: ${productName}`);
+              } else if (order.deliveryOption === 'Pickup') {
+                Alert.alert('Order Update', `Your order is ready for pickup: ${productName}`);
+              }
+            }
+          });
         } else {
           console.log('Response data is not an array:', response.data);
         }
@@ -50,11 +62,12 @@ const FetchOrderScreen = ({ navigation }) => {
         console.error('Error fetching orders:', error);
       }
     };
-
+  
     if (userEmail) {
       fetchOrders(); // Fetch orders when userEmail is available
     }
   }, [userEmail]); // Re-run when userEmail changes
+  
 
   // Render each order item
   const renderOrderItem = ({ item }) => (
@@ -63,6 +76,7 @@ const FetchOrderScreen = ({ navigation }) => {
       <Text style={styles.orderAt}>Order At: {item.createdAt || 'Unknown'}</Text>
       <Text style={styles.orderText}>Category: {item.category || 'N/A'}</Text>
       <Text style={styles.orderText}>Status: {item.status || 'N/A'}</Text>
+      <Text style={styles.orderText}>Delivery Option: {item.deliveryOption || 'N/A'}</Text>
       <Text>Email: {item.email}</Text>
     </View>
   );
@@ -70,11 +84,11 @@ const FetchOrderScreen = ({ navigation }) => {
   return (
     <ImageBackground source={background} style={styles.container} resizeMode="cover">
       <Text style={styles.title}>My Orders</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
-          <View style={styles.circle}>
-              <Icon name="chevron-back" size={50} color="#fff" />
-            </View>
-          </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+        <View style={styles.circle}>
+          <Icon name="chevron-back" size={50} color="#fff" />
+        </View>
+      </TouchableOpacity>
       {orders.length === 0 ? (
         <Text style={styles.noOrdersText}>No orders found.</Text>
       ) : (
@@ -95,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   title: {
-    marginTop:45,
+    marginTop: 45,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,

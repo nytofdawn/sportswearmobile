@@ -3,7 +3,8 @@ import { View, FlatList, Image, StyleSheet, TouchableOpacity, Text, ImageBackgro
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
+import api_url from '../api';
 
 import background from '../images/backgroundall.png';
 
@@ -15,7 +16,7 @@ const DashboardScreen = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('https://jerseystore-server.onrender.com/web/products', {
+        const response = await axios.get(`${api_url}/web/products`, {
           headers: {
             'Content-Type': 'application/json',
           },

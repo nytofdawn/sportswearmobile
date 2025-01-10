@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 const paymongoAPIKey = 'sk_test_vcNRX3jputurLKGX1jXravqS';
+import api_url from '../api';
 
 const { width } = Dimensions.get('window');
 
@@ -25,7 +26,7 @@ const ProductViewScreen = ({ route, navigation }) => {
       const res = await axios.post('https://api.paymongo.com/v1/links', {
         data: {
           attributes: {
-            amount: 10000,
+            amount: 10000, // Update this based on the product price
             description: 'Thank you for trusting Primo\'s Sportswear',
           }
         }
@@ -35,55 +36,56 @@ const ProductViewScreen = ({ route, navigation }) => {
           'Content-Type': 'application/json'
         }
       });
-      // console.log(res.data);
+      // Payment link creation
       const paymentInfos = {
         paymentLinkID: res.data.data.id,
         paymentLinkUrl: res.data.data.attributes.checkout_url
-      }
-      // console.log(paymentInfos);
+      };
       return paymentInfos;
     } catch (err) {
       console.error(err);
     }
-  }
+  };
 
   const handleCreateOrder = async () => {
-    try {
-
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        alert('Please log in to create an order.');
-        return;
-      }
-
-
-      const { name, price, _id, description, image, size = 'M', category = 'General' } = product;
-      const data = {
-        userId,
-        name,
-        size,
-        category,
-        price,
-        quantity: 1,
-        totalAmount: price,
-        status: 'pending',
-      };
-
-      // console.log('Order payload:', data);
-      createPaymentLink().then(res=>{
-        nav.navigate('Payment', {paymentInfo: res, orderData: data});
-      })
-      
-
-    } catch (error) {
-      console.error('Error creating order:', error);
-      alert('An error occurred while creating the order.');
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      alert('Please log in to proceed.');
+      return;
     }
+  
+    if (!route.params.address || !route.params.deliveryOption) {
+      alert('Please enter your address and delivery option first.');
+      navigation.navigate('AddressAndDeliveryScreen', { product });
+      return;
+    }
+  
+    const { address, deliveryOption } = route.params;
+  
+    // Define quantity (e.g., hardcoded to 1 for simplicity or allow user selection)
+    const quantity = 1;
+    const totalAmount = product.price * quantity;
+  
+    const orderData = {
+      ...product,
+      address,
+      deliveryOption,
+      userId,
+      quantity, // Ensure quantity is included
+      totalAmount, // Include totalAmount
+    };
+  
+    console.log('orderData:', orderData);
+  
+    // Create payment link
+    createPaymentLink().then((res) => {
+      navigation.navigate('Payment', { paymentInfo: res, orderData });
+    });
   };
+  
 
   const handleCustomizePress = () => {
     navigation.navigate('Blank', { product });
-    console.log('PRo', product);
   };
 
   const handleAddToCart = async () => {
@@ -97,13 +99,13 @@ const ProductViewScreen = ({ route, navigation }) => {
       const { _id, name, price, description, image, size = 'M', category = 'General' } = product;
 
       const data = {
-        userID: userId, // Update to userID
-        productID: _id, // Update to productID
+        userID: userId,
+        productID: _id,
       };
 
       console.log('Sending data to AddToCart API:', data);
 
-      const response = await fetch('https://jerseystore-server.onrender.com/web/AddToCart', {
+      const response = await fetch(`${api_url}/web/AddToCart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,15 +127,13 @@ const ProductViewScreen = ({ route, navigation }) => {
     }
   };
 
-
-
   return (
     <ImageBackground source={require('../images/backgroundall.png')} style={styles.container} resizeMode="cover">
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
-                <View style={styles.circle}>
-                    <Icon name="chevron-back" size={50} color="#fff" />
-                  </View>
-                </TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.backIconContainer}>
+        <View style={styles.circle}>
+          <Icon name="chevron-back" size={50} color="#fff" />
+        </View>
+      </TouchableOpacity>
 
       <View style={styles.imageContainer}>
         <Image
@@ -142,10 +142,8 @@ const ProductViewScreen = ({ route, navigation }) => {
         />
       </View>
 
-      {/* Dynamic Product Name */}
       <Text style={styles.productName}>{product.name}</Text>
 
-      {/* Dynamic Product Description */}
       <Text style={styles.itemContainer}>
         {product.description || 'No description available.'}
       </Text>
@@ -187,12 +185,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   circle: {
-    width: 60, // Size of the circle
-    height: 60, // Size of the circle
-    borderRadius: 30, // Make it circular
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Background color of the circle
-    justifyContent: 'center', // Center the icon
-    alignItems: 'center', // Center the icon
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageContainer: {
     width: width * 1,
