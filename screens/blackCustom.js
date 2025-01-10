@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput, ImageBackground } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, TextInput, ImageBackground, ScrollView } from 'react-native'; // Import ScrollView
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -129,12 +129,10 @@ const BlankCanvas = () => {
           'Content-Type': 'application/json'
         }
       });
-      // console.log(res.data);
       const paymentInfos = {
         paymentLinkID: res.data.data.id,
         paymentLinkUrl: res.data.data.attributes.checkout_url
       }
-      // console.log(paymentInfos);
       return paymentInfos;
     } catch (err) {
       console.error(err);
@@ -167,33 +165,9 @@ const BlankCanvas = () => {
       price: productDetails.price,
     };
 
-    // console.log(productDataToSubmit);
-    createPaymentLink().then(res=>{
-      navigation.navigate("BCPayment", {paymentInfo: res, productData: productDataToSubmit, productDetails:productDetails});
-    })
-
-    // try {
-    //   const createResponse = await fetch('https://jerseystore-server.onrender.com/web/createdesign', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(productDataToSubmit),
-    //   });
-
-    //   const createData = await createResponse.json();
-    //   if (createResponse.ok) {
-    //     Alert.alert('Success', 'Product details submitted successfully!');
-    //     console.log('Product details:', createData);
-    //     navigation.goBack();
-    //   } else {
-    //     Alert.alert('Error', `Failed to submit product details: ${createData.message}`);
-    //     console.log('Failed to submit product details:', createData);
-    //   }
-    // } catch (error) {
-    //   console.error('Error submitting product details:', error);
-    //   Alert.alert('Error', 'An error occurred while submitting the product details.');
-    // }
+    createPaymentLink().then(res => {
+      navigation.navigate("BCPayment", { paymentInfo: res, productData: productDataToSubmit, productDetails: productDetails });
+    });
   };
 
   return (
@@ -201,66 +175,68 @@ const BlankCanvas = () => {
       source={backgroundimg} // Assign the imported background image
       style={styles.container} // Apply your styles
     >
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
-            <View style={styles.circle}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIconContainer}>
+          <View style={styles.circle}>
             <Icon name="chevron-back" size={50} color="#fff" />
           </View>
         </TouchableOpacity>
 
-      <Text style={styles.headerText}>Customize Your Product</Text>
+        <Text style={styles.headerText}>Customize Your Product</Text>
 
-      {productDetails.email ? (
-        <Text style={styles.emailText}>Email: {productDetails.email}</Text>
-      ) : (
-        <Text style={styles.emailText}>Loading email...</Text>
-      )}
+        {productDetails.email ? (
+          <Text style={styles.emailText}>Email: {productDetails.email}</Text>
+        ) : (
+          <Text style={styles.emailText}>Loading email...</Text>
+        )}
 
-      {/* Display selected product image from product details */}
-      {productDetails.imgUrl ? (
-        <Image source={{ uri: productDetails.imgUrl }} style={styles.imagePreview} />
-      ) : (
-        <Text>No product image available</Text>
-      )}
+        {/* Display selected product image from product details */}
+        {productDetails.imgUrl ? (
+          <Image source={{ uri: productDetails.imgUrl }} style={styles.imagePreview} />
+        ) : (
+          <Text>No product image available</Text>
+        )}
 
-      {/* Display selected logo image preview */}
-      {logoImage ? (
-        <Image source={{ uri: logoImage }} style={styles.imagePreview} />
-      ) : (
-        <Text>No logo image selected</Text>
-      )}
+        {/* Display selected logo image preview */}
+        {logoImage ? (
+          <Image source={{ uri: logoImage }} style={styles.imagePreview} />
+        ) : (
+          <Text>No logo image selected</Text>
+        )}
 
-      <TouchableOpacity style={styles.imagePickerButton} onPress={pickLogo}>
-        <Text style={styles.buttonText}>Pick a Logo</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.imagePickerButton} onPress={pickLogo}>
+          <Text style={styles.buttonText}>Pick a Logo</Text>
+        </TouchableOpacity>
 
-      <Text style={styles.text}>Size: {productDetails.size}</Text>
-      <Text style={styles.text}>Price: PHP{productDetails.price}</Text>
+        <Text style={styles.text}>Size: {productDetails.size}</Text>
+        <Text style={styles.text}>Price: PHP{productDetails.price}</Text>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Enter description" 
-        value={productDetails.description} 
-        onChangeText={(text) => setProductDetails({ ...productDetails, description: text })}
-      />
+        <TextInput 
+          style={styles.input} 
+          placeholder="Enter description" 
+          value={productDetails.description} 
+          onChangeText={(text) => setProductDetails({ ...productDetails, description: text })}
+        />
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Enter notes" 
-        value={productDetails.notes} 
-        onChangeText={(text) => setProductDetails({ ...productDetails, notes: text })}
-      />
+        <TextInput 
+          style={styles.input} 
+          placeholder="Enter notes" 
+          value={productDetails.notes} 
+          onChangeText={(text) => setProductDetails({ ...productDetails, notes: text })}
+        />
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Enter color" 
-        value={productDetails.color} 
-        onChangeText={(text) => setProductDetails({ ...productDetails, color: text })}
-      />
+        <TextInput 
+          style={styles.input} 
+          placeholder="Enter color" 
+          value={productDetails.color} 
+          onChangeText={(text) => setProductDetails({ ...productDetails, color: text })}
+        />
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit</Text>
-      </TouchableOpacity>
-      </ImageBackground>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
@@ -269,6 +245,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 30,
   },
+  scrollViewContent: {
+    flexGrow: 1, // Ensures content can scroll
+    paddingBottom: 30, // Adds some space at the bottom for comfortable scrolling
+  },
   backIconContainer: {
     position: 'absolute',
     top: 40,
@@ -276,12 +256,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   circle: {
-    width: 60, // Size of the circle
-    height: 60, // Size of the circle
-    borderRadius: 30, // Make it circular
-    backgroundColor: 'rgba(0, 0, 0, 0.3)', // Background color of the circle
-    justifyContent: 'center', // Center the icon
-    alignItems: 'center', // Center the icon
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerText: {
     fontSize: 24,
@@ -296,11 +276,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   imagePreview: {
-    width: 150,  // Increased width for testing
-    height: 150, // Increased height for testing
+    width: 150,
+    height: 150,
     marginVertical: 10,
-    borderRadius: 10, // Increased radius for clarity
-    backgroundColor: '#ddd', // Add background color for visibility
+    borderRadius: 10,
+    backgroundColor: '#ddd',
   },
   text: {
     fontSize: 16,
